@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: noshirvani
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: noshirvani-api
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/noshirvani?sslmode=disable
+      - JWT_SECRET=super-secret-key-change-in-production
+      - JWT_REFRESH_SECRET=refresh-secret
+      - JWT_ACCESS_TTL=3600
+      - JWT_REFRESH_TTL=1296000
+      - OTP_PROVIDER=mock
+      - UPLOAD_PATH=/uploads
+    volumes:
+      - uploads:/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: noshirvani-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: noshirvani-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:
