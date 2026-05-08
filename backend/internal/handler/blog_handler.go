@@ -1,130 +1,215 @@
 package handler
 
 import (
-    "net/http"
-    "strings"
+	"net/http"
+	"strings"
 
-    "github.com/gin-gonic/gin"
-    "github.com/yourusername/noshirvani-academy/backend/internal/domain"
-    "gorm.io/gorm"
+	"github.com/gin-gonic/gin"
+	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
+	"gorm.io/gorm"
 )
 
 type BlogHandler struct {
-    db *gorm.DB
+	db *gorm.DB
 }
 
+// BlogInput داده‌های ورودی برای نوشته بلاگ
+type BlogInput struct {
+	Title     string `json:"title" binding:"required" description:"عنوان نوشته"`
+	Slug      string `json:"slug" description:"نشانی URL نوشته (به صورت خودکار ایجاد می‌شود اگر خالی باشد)"`
+	Content   string `json:"content" description:"محتوای نوشته"`
+	AuthorID  string `json:"author_id" description:"شناسه نویسنده"`
+	Published bool   `json:"published" example:"false" description:"وضعیت انتشار نوشته"`
+}
+
+// Deprecated: استفاده از BlogInput کنید
 type blogInput struct {
-    Title     string `json:"title" binding:"required"`
-    Slug      string `json:"slug"`
-    Content   string `json:"content"`
-    AuthorID  string `json:"author_id"`
-    Published bool   `json:"published"`
+	Title     string `json:"title" binding:"required"`
+	Slug      string `json:"slug"`
+	Content   string `json:"content"`
+	AuthorID  string `json:"author_id"`
+	Published bool   `json:"published"`
 }
 
 func NewBlogHandler(db *gorm.DB) *BlogHandler {
-    return &BlogHandler{db: db}
+	return &BlogHandler{db: db}
 }
 
+// Create godoc
+// @Summary ایجاد نوشته بلاگ جدید
+// @Description یک نوشته بلاگ جدید را ایجاد می‌کند (فقط برای مدیران)
+// @Tags بلاگ
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param input body BlogInput true "اطلاعات نوشته"
+// @Success 201 {object} domain.BlogPost "نوشته با موفقیت ایجاد شد"
+// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog [post]
 func (h *BlogHandler) Create(c *gin.Context) {
-    var input blogInput
-    if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-        return
-    }
-    if input.Slug == "" {
-        input.Slug = slugify(input.Title)
-    }
+	var input BlogInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+	if input.Slug == "" {
+		input.Slug = slugify(input.Title)
+	}
 
-    post := domain.BlogPost{
-        Title:     input.Title,
-        Slug:      input.Slug,
-        Content:   input.Content,
-        AuthorID:  input.AuthorID,
-        Published: input.Published,
-    }
+	post := domain.BlogPost{
+		Title:     input.Title,
+		Slug:      input.Slug,
+		Content:   input.Content,
+		AuthorID:  input.AuthorID,
+		Published: input.Published,
+	}
 
-    if err := h.db.Create(&post).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create post"})
-        return
-    }
-    c.JSON(http.StatusOK, post)
+	if err := h.db.Create(&post).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create post"})
+		return
+	}
+	c.JSON(http.StatusOK, post)
 }
 
+// Update godoc
+// @Summary بروزرسانی نوشته بلاگ
+// @Description اطلاعات یک نوشته بلاگ را بروزرسانی می‌کند (فقط برای مدیران)
+// @Tags بلاگ
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "شناسه نوشته"
+// @Param input body BlogInput true "اطلاعات جدید نوشته"
+// @Success 200 {object} map[string]string "نوشته با موفقیت بروزرسانی شد"
+// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog/{id} [put]
 func (h *BlogHandler) Update(c *gin.Context) {
-    id := c.Param("id")
-    var input blogInput
-    if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-        return
-    }
-    if input.Slug == "" && input.Title != "" {
-        input.Slug = slugify(input.Title)
-    }
+	id := c.Param("id")
+	var input BlogInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+	if input.Slug == "" && input.Title != "" {
+		input.Slug = slugify(input.Title)
+	}
 
-    updates := map[string]interface{}{
-        "title":     input.Title,
-        "slug":      input.Slug,
-        "content":   input.Content,
-        "author_id": input.AuthorID,
-        "published": input.Published,
-    }
+	updates := map[string]interface{}{
+		"title":     input.Title,
+		"slug":      input.Slug,
+		"content":   input.Content,
+		"author_id": input.AuthorID,
+		"published": input.Published,
+	}
 
-    if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Updates(updates).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update post"})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"status": "updated"})
+	if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update post"})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
 }
 
+// Publish godoc
+// @Summary انتشار نوشته بلاگ
+// @Description یک نوشته بلاگ را برای عموم قابل دسترس می‌کند (فقط برای مدیران)
+// @Tags بلاگ
+// @Security BearerAuth
+// @Param id path string true "شناسه نوشته"
+// @Success 200 {object} map[string]string "نوشته با موفقیت منتشر شد"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog/{id}/publish [put]
 func (h *BlogHandler) Publish(c *gin.Context) {
-    id := c.Param("id")
-    if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Update("published", true).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish post"})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"status": "published"})
+	id := c.Param("id")
+	if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Update("published", true).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to publish post"})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "published"})
 }
 
+// Delete godoc
+// @Summary حذف نوشته بلاگ
+// @Description یک نوشته بلاگ را حذف می‌کند (فقط برای مدیران)
+// @Tags بلاگ
+// @Security BearerAuth
+// @Param id path string true "شناسه نوشته"
+// @Success 200 {object} map[string]string "نوشته با موفقیت حذف شد"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog/{id} [delete]
 func (h *BlogHandler) Delete(c *gin.Context) {
-    id := c.Param("id")
-    if err := h.db.Delete(&domain.BlogPost{}, "id = ?", id).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete post"})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+	id := c.Param("id")
+	if err := h.db.Delete(&domain.BlogPost{}, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete post"})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
 
+// List godoc
+// @Summary دریافت لیست تمام نوشته‌های بلاگ
+// @Description تمام نوشته‌های بلاگ (منتشر و منتشرنشده) را دریافت می‌کند (فقط برای مدیران)
+// @Tags بلاگ
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} domain.BlogPost "لیست نوشته‌ها"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog [get]
 func (h *BlogHandler) List(c *gin.Context) {
-    var posts []domain.BlogPost
-    if err := h.db.Order("created_at desc").Limit(100).Find(&posts).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load posts"})
-        return
-    }
-    c.JSON(http.StatusOK, posts)
+	var posts []domain.BlogPost
+	if err := h.db.Order("created_at desc").Limit(100).Find(&posts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load posts"})
+		return
+	}
+	c.JSON(http.StatusOK, posts)
 }
 
+// PublicList godoc
+// @Summary دریافت لیست نوشته‌های منتشر شده
+// @Description تمام نوشته‌های منتشر‌شده را دریافت می‌کند (بدون نیاز به احراز هویت)
+// @Tags بلاگ
+// @Produce json
+// @Success 200 {array} domain.BlogPost "لیست نوشته‌های منتشر‌شده"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog [get]
 func (h *BlogHandler) PublicList(c *gin.Context) {
-    var posts []domain.BlogPost
-    if err := h.db.Where("published = ?", true).Order("created_at desc").Limit(50).Find(&posts).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load posts"})
-        return
-    }
-    c.JSON(http.StatusOK, posts)
+	var posts []domain.BlogPost
+	if err := h.db.Where("published = ?", true).Order("created_at desc").Limit(50).Find(&posts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load posts"})
+		return
+	}
+	c.JSON(http.StatusOK, posts)
 }
 
+// PublicGet godoc
+// @Summary دریافت نوشته بلاگ با slug
+// @Description یک نوشته منتشر شده را با استفاده از slug آن دریافت می‌کند (بدون نیاز به احراز هویت)
+// @Tags بلاگ
+// @Produce json
+// @Param slug path string true "نشانی URL نوشته"
+// @Success 200 {object} domain.BlogPost "نوشته بلاگ"
+// @Failure 404 {object} ErrorResponse "نوشته یافت نشد"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /blog/{slug} [get]
 func (h *BlogHandler) PublicGet(c *gin.Context) {
-    slug := c.Param("slug")
-    var post domain.BlogPost
-    if err := h.db.Where("slug = ? AND published = ?", slug, true).First(&post).Error; err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
-        return
-    }
-    c.JSON(http.StatusOK, post)
+	slug := c.Param("slug")
+	var post domain.BlogPost
+	if err := h.db.Where("slug = ? AND published = ?", slug, true).First(&post).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
+		return
+	}
+	c.JSON(http.StatusOK, post)
 }
 
 func slugify(input string) string {
-    output := strings.ToLower(strings.TrimSpace(input))
-    output = strings.ReplaceAll(output, " ", "-")
-    output = strings.ReplaceAll(output, "--", "-")
-    return output
+	output := strings.ToLower(strings.TrimSpace(input))
+	output = strings.ReplaceAll(output, " ", "-")
+	output = strings.ReplaceAll(output, "--", "-")
+	return output
 }
