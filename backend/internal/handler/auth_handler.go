@@ -1,6 +1,7 @@
 package handler
 
 import (
+    "log"
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ type AuthHandler struct {
     jwtService  *auth.JWTService
     otpStore    *sms.OTPStore
     otpProvider string
+    adminPhones map[string]bool
 }
 
 type requestOTPInput struct {
@@ -30,8 +32,8 @@ type refreshInput struct {
     RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-func NewAuthHandler(db *gorm.DB, jwtService *auth.JWTService, otpStore *sms.OTPStore, otpProvider string) *AuthHandler {
-    return &AuthHandler{db: db, jwtService: jwtService, otpStore: otpStore, otpProvider: otpProvider}
+func NewAuthHandler(db *gorm.DB, jwtService *auth.JWTService, otpStore *sms.OTPStore, otpProvider string, adminPhones map[string]bool) *AuthHandler {
+    return &AuthHandler{db: db, jwtService: jwtService, otpStore: otpStore, otpProvider: otpProvider, adminPhones: adminPhones}
 }
 
 func (h *AuthHandler) RequestOTP(c *gin.Context) {
@@ -46,6 +48,8 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate otp"})
         return
     }
+
+    log.Printf("OTP requested for %s: %s", input.Phone, otp)
 
     resp := gin.H{"message": "otp sent"}
     if h.otpProvider == "mock" {
@@ -72,7 +76,11 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
             return
         }
-        user = domain.User{Phone: input.Phone, Role: "student", IsActive: true}
+        role := "student"
+        if h.adminPhones[input.Phone] {
+            role = "admin"
+        }
+        user = domain.User{Phone: input.Phone, Role: role, IsActive: true}
         if err := h.db.Create(&user).Error; err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
             return

@@ -57,6 +57,11 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
         input.JalaliDate = pkg.GregorianToJalaliString(examDate)
     }
 
+    for i := range input.Subjects {
+        input.Subjects[i].ID = ""
+        input.Subjects[i].ExamID = ""
+    }
+
     exam := domain.Exam{
         StudentID:     student.ID,
         Title:         input.Title,
