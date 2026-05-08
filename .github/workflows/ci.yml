@@ -43,14 +43,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
       - name: Install dependencies
         run: cd frontend && pnpm install --frozen-lockfile
       - name: Lint
         run: cd frontend && pnpm lint
       - name: Build
         run: cd frontend && pnpm build
+
 
   docker-build:
     needs: [backend-test, frontend-test]
