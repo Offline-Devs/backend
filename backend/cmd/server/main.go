@@ -21,15 +21,17 @@ func main() {
         log.Fatalf("failed to connect to database: %v", err)
     }
 
-    database.AutoMigrate(db)
+    if err := database.AutoMigrate(db); err != nil {
+        log.Fatalf("failed to migrate database: %v", err)
+    }
 
     r := router.Setup(db, cfg)
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
+    addr := cfg.ServerAddr
+    if port := os.Getenv("PORT"); port != "" {
+        addr = ":" + port
     }
-    log.Printf("server running on :%s", port)
-    if err := r.Run(":" + port); err != nil {
+    log.Printf("server running on %s", addr)
+    if err := r.Run(addr); err != nil {
         log.Fatal(err)
     }
 }

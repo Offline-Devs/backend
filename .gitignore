@@ -21,6 +21,7 @@ frontend/out/
 frontend/.turbo/
 frontend/.vercel/
 frontend/.env
+frontend/.env.local
 
 # Logs
 *.log

@@ -22,9 +22,13 @@ func NewOTPStore() *OTPStore {
 }
 
 func (s *OTPStore) GenerateOTP(phone string) (string, error) {
+    otp, err := generateNumericOTP(6)
+    if err != nil {
+        return "", err
+    }
+
     s.mu.Lock()
     defer s.mu.Unlock()
-    otp := generateNumericOTP(6)
     s.store[phone] = otpEntry{
         Code:      otp,
         ExpiresAt: time.Now().Add(2 * time.Minute),
@@ -50,14 +54,14 @@ func (s *OTPStore) VerifyOTP(phone, code string) bool {
     return false
 }
 
-func generateNumericOTP(length int) string {
+func generateNumericOTP(length int) (string, error) {
     const nums = "0123456789"
     result := make([]byte, length)
     if _, err := io.ReadFull(rand.Reader, result); err != nil {
-        panic(err)
+        return "", err
     }
     for i := 0; i < length; i++ {
         result[i] = nums[int(result[i])%len(nums)]
     }
-    return string(result)
+    return string(result), nil
 }

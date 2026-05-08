@@ -100,6 +100,10 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
         return
     }
+    if err := h.db.Preload("User").First(&student, "id = ?", student.ID).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reload profile"})
+        return
+    }
 
     c.JSON(http.StatusOK, student)
 }

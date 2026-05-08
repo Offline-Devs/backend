@@ -1,19 +1,23 @@
 package config
 
 import (
+    "log"
     "os"
     "strconv"
+    "strings"
 )
 
 type Config struct {
-    DatabaseURL   string
-    JWTSecret     string
+    DatabaseURL      string
+    JWTSecret        string
     JWTRefreshSecret string
-    JWTAccessTTL  int64
-    JWTRefreshTTL int64
-    OTPProvider   string
-    UploadPath    string
-    ServerAddr    string
+    JWTAccessTTL     int64
+    JWTRefreshTTL    int64
+    OTPProvider      string
+    UploadPath       string
+    ServerAddr       string
+    CORSOrigins      []string
+    AdminPhones      map[string]bool
 }
 
 func Load() *Config {
@@ -22,16 +26,35 @@ func Load() *Config {
         refreshSecret = os.Getenv("JWT_SECRET")
     }
 
-    return &Config{
-        DatabaseURL:   os.Getenv("DATABASE_URL"),
-        JWTSecret:     os.Getenv("JWT_SECRET"),
+    cfg := &Config{
+        DatabaseURL:      os.Getenv("DATABASE_URL"),
+        JWTSecret:        os.Getenv("JWT_SECRET"),
         JWTRefreshSecret: refreshSecret,
-        JWTAccessTTL:  getEnvInt("JWT_ACCESS_TTL", 3600),
-        JWTRefreshTTL: getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
-        OTPProvider:   os.Getenv("OTP_PROVIDER"),
-        UploadPath:    os.Getenv("UPLOAD_PATH"),
-        ServerAddr:    os.Getenv("SERVER_ADDR"),
+        JWTAccessTTL:     getEnvInt("JWT_ACCESS_TTL", 3600),
+        JWTRefreshTTL:    getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
+        OTPProvider:      getEnv("OTP_PROVIDER", "mock"),
+        UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
+        ServerAddr:       getEnv("SERVER_ADDR", ":8080"),
+        CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
+        AdminPhones:      phoneSet(os.Getenv("ADMIN_PHONES")),
     }
+
+    if cfg.DatabaseURL == "" {
+        log.Fatal("DATABASE_URL is required")
+    }
+    if cfg.JWTSecret == "" || cfg.JWTRefreshSecret == "" {
+        log.Fatal("JWT_SECRET and JWT_REFRESH_SECRET are required")
+    }
+
+    return cfg
+}
+
+func getEnv(name, fallback string) string {
+    value := os.Getenv(name)
+    if value == "" {
+        return fallback
+    }
+    return value
 }
 
 func getEnvInt(name string, fallback int64) int64 {
@@ -44,4 +67,24 @@ func getEnvInt(name string, fallback int64) int64 {
         return fallback
     }
     return parsed
+}
+
+func splitCSV(value string) []string {
+    parts := strings.Split(value, ",")
+    output := make([]string, 0, len(parts))
+    for _, part := range parts {
+        trimmed := strings.TrimSpace(part)
+        if trimmed != "" {
+            output = append(output, trimmed)
+        }
+    }
+    return output
+}
+
+func phoneSet(value string) map[string]bool {
+    phones := map[string]bool{}
+    for _, phone := range splitCSV(value) {
+        phones[phone] = true
+    }
+    return phones
 }

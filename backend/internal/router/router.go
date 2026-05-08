@@ -17,7 +17,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
         r.Static("/uploads", cfg.UploadPath)
     }
 
-    r.Use(middleware.CORS())
+    r.Use(middleware.CORS(cfg.CORSOrigins))
     r.Use(middleware.RateLimiter())
 
     jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTRefreshSecret, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
@@ -29,7 +29,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
     api := r.Group("/api/v1")
     {
-        authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider)
+        authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider, cfg.AdminPhones)
         blogH := handler.NewBlogHandler(db)
         api.POST("/auth/request-otp", authH.RequestOTP)
         api.POST("/auth/verify-otp", authH.VerifyOTP)
