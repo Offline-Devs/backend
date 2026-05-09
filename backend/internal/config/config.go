@@ -19,7 +19,7 @@ type Config struct {
 	CORSOrigins      []string
 	AdminPhones      map[string]bool
 	SMSIRAPIKey      string
-	SMSIRLineNumber  string
+	SMSIRTemplateID  string
 	RedisAddr        string
 }
 
@@ -41,7 +41,7 @@ func Load() *Config {
 		CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
 		AdminPhones:      phoneSet(os.Getenv("ADMIN_PHONES")),
 		SMSIRAPIKey:      os.Getenv("SMSIR_API_KEY"),
-		SMSIRLineNumber:  os.Getenv("SMSIR_LINE_NUMBER"),
+		SMSIRTemplateID:  os.Getenv("SMSIR_TEMPLATE_ID"),
 		RedisAddr:        getEnv("REDIS_ADDR", "localhost:6379"),
 	}
 

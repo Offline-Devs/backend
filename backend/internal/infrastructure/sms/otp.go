@@ -28,15 +28,20 @@ const (
 type OTPStore struct {
 	redisClient *redis.Client
 	apiKey      string
-	lineNumber  string
+	templateID  string
 	httpClient  *http.Client
 }
 
-// SMS.ir API request/response structures
-type smsirSendRequest struct {
-	LineNumber  string   `json:"lineNumber"`
-	MessageText string   `json:"messageText"`
-	Mobiles     []string `json:"mobiles"`
+// SMS.ir Template API request structure
+type smsirVerifyRequest struct {
+	Mobile     string           `json:"mobile"`
+	TemplateID int              `json:"templateId"`
+	Parameters []smsirParameter `json:"parameters"`
+}
+
+type smsirParameter struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type smsirResponse struct {
@@ -54,8 +59,8 @@ func (e *RateLimitError) Error() string {
 	return e.Message
 }
 
-// NewOTPStore creates a new OTP store with Redis backend
-func NewOTPStore(redisAddr, apiKey, lineNumber string) *OTPStore {
+// NewOTPStore creates a new OTP store with Redis backend and SMS.ir template
+func NewOTPStore(redisAddr, apiKey, templateID string) *OTPStore {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
 		Password: "", // no password by default
@@ -72,7 +77,7 @@ func NewOTPStore(redisAddr, apiKey, lineNumber string) *OTPStore {
 	return &OTPStore{
 		redisClient: rdb,
 		apiKey:      apiKey,
-		lineNumber:  lineNumber,
+		templateID:  templateID,
 		httpClient:  &http.Client{Timeout: 10 * time.Second},
 	}
 }
@@ -163,7 +168,7 @@ func (s *OTPStore) incrementRateLimit(ctx context.Context, phone string) {
 	pipe.Exec(ctx)
 }
 
-// sendSMS sends OTP via SMS.ir API or prints to console in mock mode
+// sendSMS sends OTP via SMS.ir Template API or prints to console in mock mode
 func (s *OTPStore) sendSMS(phone, code string) error {
 	// Mock mode: if no API key, just log
 	if s.apiKey == "" {
@@ -175,12 +180,22 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 	// SMS.ir expects: 09xxxxxxxxx (without +98 prefix)
 	normalizedPhone := normalizePhoneForSMSIR(phone)
 
-	message := fmt.Sprintf("کد تایید شما: %s\nاکادمی نوشیروانی", code)
+	// Parse template ID
+	templateIDInt, err := strconv.Atoi(s.templateID)
+	if err != nil {
+		return fmt.Errorf("invalid template ID: %w", err)
+	}
 
-	reqBody := smsirSendRequest{
-		LineNumber:  s.lineNumber,
-		MessageText: message,
-		Mobiles:     []string{normalizedPhone},
+	// Build request with template
+	reqBody := smsirVerifyRequest{
+		Mobile:     normalizedPhone,
+		TemplateID: templateIDInt,
+		Parameters: []smsirParameter{
+			{
+				Name:  "CODE",
+				Value: code,
+			},
+		},
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -188,11 +203,13 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", "https://api.sms.ir/v1/send/bulk", bytes.NewBuffer(jsonData))
+	// Use verify endpoint for template-based sending
+	req, err := http.NewRequest("POST", "https://api.sms.ir/v1/send/verify", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
 
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-API-KEY", s.apiKey)
 
@@ -212,7 +229,7 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 	if err := json.Unmarshal(body, &smsResp); err != nil {
 		return err
 	}
-	println(smsResp)
+
 	if smsResp.Status != 1 {
 		return fmt.Errorf("SMS.ir returned error: %s", smsResp.Message)
 	}
