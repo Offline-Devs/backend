@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -95,6 +96,15 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 
 	otp, err := h.otpStore.GenerateOTP(input.Phone)
 	if err != nil {
+		// Check if it's a rate limit error
+		var rateLimitErr *sms.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			c.JSON(http.StatusTooManyRequests, ErrorResponse{
+				Error: rateLimitErr.Message,
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate otp"})
 		return
 	}
