@@ -1,90 +1,96 @@
 package config
 
 import (
-    "log"
-    "os"
-    "strconv"
-    "strings"
+	"log"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type Config struct {
-    DatabaseURL      string
-    JWTSecret        string
-    JWTRefreshSecret string
-    JWTAccessTTL     int64
-    JWTRefreshTTL    int64
-    OTPProvider      string
-    UploadPath       string
-    ServerAddr       string
-    CORSOrigins      []string
-    AdminPhones      map[string]bool
+	DatabaseURL      string
+	JWTSecret        string
+	JWTRefreshSecret string
+	JWTAccessTTL     int64
+	JWTRefreshTTL    int64
+	OTPProvider      string
+	UploadPath       string
+	ServerAddr       string
+	CORSOrigins      []string
+	AdminPhones      map[string]bool
+	SMSIRAPIKey      string
+	SMSIRLineNumber  string
+	RedisAddr        string
 }
 
 func Load() *Config {
-    refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
-    if refreshSecret == "" {
-        refreshSecret = os.Getenv("JWT_SECRET")
-    }
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if refreshSecret == "" {
+		refreshSecret = os.Getenv("JWT_SECRET")
+	}
 
-    cfg := &Config{
-        DatabaseURL:      os.Getenv("DATABASE_URL"),
-        JWTSecret:        os.Getenv("JWT_SECRET"),
-        JWTRefreshSecret: refreshSecret,
-        JWTAccessTTL:     getEnvInt("JWT_ACCESS_TTL", 3600),
-        JWTRefreshTTL:    getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
-        OTPProvider:      getEnv("OTP_PROVIDER", "mock"),
-        UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
-        ServerAddr:       getEnv("SERVER_ADDR", ":8080"),
-        CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
-        AdminPhones:      phoneSet(os.Getenv("ADMIN_PHONES")),
-    }
+	cfg := &Config{
+		DatabaseURL:      os.Getenv("DATABASE_URL"),
+		JWTSecret:        os.Getenv("JWT_SECRET"),
+		JWTRefreshSecret: refreshSecret,
+		JWTAccessTTL:     getEnvInt("JWT_ACCESS_TTL", 3600),
+		JWTRefreshTTL:    getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
+		OTPProvider:      getEnv("OTP_PROVIDER", "mock"),
+		UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
+		ServerAddr:       getEnv("SERVER_ADDR", ":8080"),
+		CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
+		AdminPhones:      phoneSet(os.Getenv("ADMIN_PHONES")),
+		SMSIRAPIKey:      os.Getenv("SMSIR_API_KEY"),
+		SMSIRLineNumber:  os.Getenv("SMSIR_LINE_NUMBER"),
+		RedisAddr:        getEnv("REDIS_ADDR", "localhost:6379"),
+	}
 
-    if cfg.DatabaseURL == "" {
-        log.Fatal("DATABASE_URL is required")
-    }
-    if cfg.JWTSecret == "" || cfg.JWTRefreshSecret == "" {
-        log.Fatal("JWT_SECRET and JWT_REFRESH_SECRET are required")
-    }
+	if cfg.DatabaseURL == "" {
+		log.Fatal("DATABASE_URL is required")
+	}
+	if cfg.JWTSecret == "" || cfg.JWTRefreshSecret == "" {
+		log.Fatal("JWT_SECRET and JWT_REFRESH_SECRET are required")
+	}
 
-    return cfg
+	return cfg
 }
 
 func getEnv(name, fallback string) string {
-    value := os.Getenv(name)
-    if value == "" {
-        return fallback
-    }
-    return value
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	return value
 }
 
 func getEnvInt(name string, fallback int64) int64 {
-    value := os.Getenv(name)
-    if value == "" {
-        return fallback
-    }
-    parsed, err := strconv.ParseInt(value, 10, 64)
-    if err != nil {
-        return fallback
-    }
-    return parsed
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 func splitCSV(value string) []string {
-    parts := strings.Split(value, ",")
-    output := make([]string, 0, len(parts))
-    for _, part := range parts {
-        trimmed := strings.TrimSpace(part)
-        if trimmed != "" {
-            output = append(output, trimmed)
-        }
-    }
-    return output
+	parts := strings.Split(value, ",")
+	output := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			output = append(output, trimmed)
+		}
+	}
+	return output
 }
 
 func phoneSet(value string) map[string]bool {
-    phones := map[string]bool{}
-    for _, phone := range splitCSV(value) {
-        phones[phone] = true
-    }
-    return phones
+	phones := map[string]bool{}
+	for _, phone := range splitCSV(value) {
+		phones[phone] = true
+	}
+	return phones
 }

@@ -24,7 +24,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	r.Use(middleware.RateLimiter())
 
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTRefreshSecret, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
-	otpStore := sms.NewOTPStore()
+	otpStore := sms.NewOTPStore(cfg.RedisAddr, cfg.SMSIRAPIKey, cfg.SMSIRLineNumber)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

@@ -1,4 +1,19 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -20,6 +35,9 @@ services:
     container_name: noshirvani-api
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/noshirvani?sslmode=disable
+      - REDIS_ADDR=redis:6379
+      - SMSIR_API_KEY=${SMSIR_API_KEY:-}
+      - SMSIR_LINE_NUMBER=${SMSIR_LINE_NUMBER:-}
       - JWT_SECRET=super-secret-key-change-in-production
       - JWT_REFRESH_SECRET=refresh-secret
       - JWT_ACCESS_TTL=3600
@@ -32,6 +50,8 @@ services:
     volumes:
       - uploads:/uploads
     depends_on:
+      redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     ports:
@@ -67,4 +87,5 @@ services:
 
 volumes:
   pgdata:
+  redis_data:
   uploads:
