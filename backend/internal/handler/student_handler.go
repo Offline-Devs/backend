@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -64,49 +63,35 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
-	if strings.TrimSpace(input.FirstName) == "" || strings.TrimSpace(input.LastName) == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "first_name and last_name are required"})
-		return
-	}
 
 	userID, ok := c.Get("user_id")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
 		return
 	}
-	userIDStr, ok := userID.(string)
-	if !ok || userIDStr == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid user id"})
-		return
-	}
 
 	var student domain.Student
-	err := h.db.Where("user_id = ?", userIDStr).First(&student).Error
+	err := h.db.Where("user_id = ?", userID).First(&student).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load profile"})
 		return
 	}
 
 	if input.JalaliBirthDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliBirthDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_birth_date format"})
-			return
+		if t, err := pkg.JalaliToGregorian(input.JalaliBirthDate); err == nil {
+			input.BirthDate = &t
 		}
-		input.BirthDate = &t
-	} else if input.BirthDate != nil {
-		input.JalaliBirthDate = pkg.GregorianToJalaliString(*input.BirthDate)
 	}
 
 	if err == gorm.ErrRecordNotFound {
 		student = domain.Student{
-			UserID:        userIDStr,
-			FirstName:     strings.TrimSpace(input.FirstName),
-			LastName:      strings.TrimSpace(input.LastName),
-			City:          strings.TrimSpace(input.City),
-			School:        strings.TrimSpace(input.School),
-			Major:         strings.TrimSpace(input.Major),
-			ProfilePhoto:  strings.TrimSpace(input.ProfilePhoto),
+			UserID:        userID.(string),
+			FirstName:     input.FirstName,
+			LastName:      input.LastName,
+			City:          input.City,
+			School:        input.School,
+			Major:         input.Major,
+			ProfilePhoto:  input.ProfilePhoto,
 			DynamicFields: input.DynamicFields,
 		}
 		if input.BirthDate != nil {
@@ -125,16 +110,14 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"first_name":     strings.TrimSpace(input.FirstName),
-		"last_name":      strings.TrimSpace(input.LastName),
-		"city":           strings.TrimSpace(input.City),
-		"school":         strings.TrimSpace(input.School),
-		"major":          strings.TrimSpace(input.Major),
-		"profile_photo":  strings.TrimSpace(input.ProfilePhoto),
-		"dynamic_fields": input.DynamicFields,
-	}
-	if input.JalaliBirthDate != "" {
-		updates["jalali_birth_date"] = input.JalaliBirthDate
+		"first_name":        input.FirstName,
+		"last_name":         input.LastName,
+		"city":              input.City,
+		"school":            input.School,
+		"major":             input.Major,
+		"profile_photo":     input.ProfilePhoto,
+		"dynamic_fields":    input.DynamicFields,
+		"jalali_birth_date": input.JalaliBirthDate,
 	}
 	if input.BirthDate != nil {
 		updates["birth_date"] = *input.BirthDate

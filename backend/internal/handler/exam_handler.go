@@ -25,17 +25,6 @@ type CreateExamInput struct {
 	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
 }
 
-// UpdateExamInput داده‌های ورودی برای بروزرسانی آزمون
-type UpdateExamInput struct {
-	Title         *string                `json:"title" description:"عنوان آزمون"`
-	ExamDate      *time.Time             `json:"exam_date" description:"تاریخ و زمان آزمون"`
-	JalaliDate    *string                `json:"jalali_date" example:"1400/01/01" description:"تاریخ جلالی آزمون"`
-	Major         *string                `json:"major" description:"رشته تحصیلی"`
-	TotalSubjects *int                   `json:"total_subjects" description:"تعداد کل دروس"`
-	DynamicFields map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
-	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
-}
-
 // Deprecated: استفاده از CreateExamInput کنید
 type createExamInput struct {
 	Title         string                 `json:"title"`
@@ -86,16 +75,11 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 
 	examDate := time.Now()
 	if input.JalaliDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
-			return
+		if t, err := pkg.JalaliToGregorian(input.JalaliDate); err == nil {
+			examDate = t
 		}
-		examDate = t
 	} else if input.ExamDate != nil {
 		examDate = *input.ExamDate
-		input.JalaliDate = pkg.GregorianToJalaliString(examDate)
-	} else {
 		input.JalaliDate = pkg.GregorianToJalaliString(examDate)
 	}
 
@@ -120,7 +104,7 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, exam)
+	c.JSON(http.StatusOK, exam)
 }
 
 // ListExams godoc
@@ -222,101 +206,4 @@ func (h *ExamHandler) DeleteExam(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
-}
-
-// UpdateExam godoc
-// @Summary بروزرسانی آزمون
-// @Description یک آزمون موجود را بروزرسانی می‌کند
-// @Tags آزمون‌ها
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path string true "شناسه آزمون"
-// @Param input body UpdateExamInput true "اطلاعات آزمون"
-// @Success 200 {object} domain.Exam "آزمون با موفقیت بروزرسانی شد"
-// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "آزمون یافت نشد"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /exams/{id} [put]
-func (h *ExamHandler) UpdateExam(c *gin.Context) {
-	id := c.Param("id")
-	userID, ok := c.Get("user_id")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
-		return
-	}
-
-	var input UpdateExamInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
-		return
-	}
-
-	var student domain.Student
-	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student profile not found"})
-		return
-	}
-
-	var exam domain.Exam
-	if err := h.db.Preload("Subjects").First(&exam, "id = ? AND student_id = ?", id, student.ID).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "exam not found"})
-		return
-	}
-
-	updates := map[string]interface{}{}
-	if input.Title != nil {
-		updates["title"] = *input.Title
-	}
-	if input.Major != nil {
-		updates["major"] = *input.Major
-	}
-	if input.TotalSubjects != nil {
-		updates["total_subjects"] = *input.TotalSubjects
-	}
-	if input.DynamicFields != nil {
-		updates["dynamic_fields"] = input.DynamicFields
-	}
-	if input.JalaliDate != nil {
-		t, err := pkg.JalaliToGregorian(*input.JalaliDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
-			return
-		}
-		updates["jalali_date"] = *input.JalaliDate
-		updates["exam_date"] = t
-	} else if input.ExamDate != nil {
-		updates["exam_date"] = *input.ExamDate
-		updates["jalali_date"] = pkg.GregorianToJalaliString(*input.ExamDate)
-	}
-
-	if err := h.db.Model(&exam).Updates(updates).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam"})
-		return
-	}
-
-	if input.Subjects != nil {
-		if err := h.db.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam subjects"})
-			return
-		}
-		for i := range input.Subjects {
-			input.Subjects[i].ID = ""
-			input.Subjects[i].ExamID = exam.ID
-		}
-		if len(input.Subjects) > 0 {
-			if err := h.db.Create(&input.Subjects).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam subjects"})
-				return
-			}
-		}
-	}
-
-	if err := h.db.Preload("Subjects").First(&exam, "id = ?", exam.ID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to reload exam"})
-		return
-	}
-
-	c.JSON(http.StatusOK, exam)
 }
