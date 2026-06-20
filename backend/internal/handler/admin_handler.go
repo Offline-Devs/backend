@@ -328,13 +328,13 @@ func (h *AdminHandler) DeleteDynamicField(c *gin.Context) {
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
-// @Param student_id path string true "شناسه دانشجو"
+// @Param id path string true "شناسه دانشجو"
 // @Success 200 {array} domain.Exam "لیست آزمون‌ها"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/exams [get]
+// @Router /admin/students/{id}/exams [get]
 func (h *AdminHandler) GetStudentExams(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := c.Param("id")
 
 	var exams []domain.Exam
 	if err := h.db.Where("student_id = ?", studentID).
@@ -354,13 +354,13 @@ func (h *AdminHandler) GetStudentExams(c *gin.Context) {
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
-// @Param student_id path string true "شناسه دانشجو"
+// @Param id path string true "شناسه دانشجو"
 // @Success 200 {array} domain.Mistake "لیست اشتباهات"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/mistakes [get]
+// @Router /admin/students/{id}/mistakes [get]
 func (h *AdminHandler) GetStudentMistakes(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := c.Param("id")
 
 	var mistakes []domain.Mistake
 	if err := h.db.Where("student_id = ?", studentID).

@@ -74,16 +74,16 @@ func (h *PerformanceHandler) GetStudentPerformance(c *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param student_id path string true "شناسه دانشجو"
+// @Param id path string true "شناسه دانشجو"
 // @Param input body CreatePerformanceInput true "اطلاعات رکورد عملکرد"
 // @Success 201 {object} domain.PerformanceHistory "رکورد با موفقیت ایجاد شد"
 // @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
 // @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/performance [post]
+// @Router /admin/students/{id}/performance [post]
 func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := c.Param("id")
 	var input CreatePerformanceInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
@@ -196,13 +196,13 @@ func (h *PerformanceHandler) AdminDeletePerformance(c *gin.Context) {
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
-// @Param student_id path string true "شناسه دانشجو"
+// @Param id path string true "شناسه دانشجو"
 // @Success 200 {array} domain.PerformanceHistory "لیست رکوردهای عملکرد"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/performance [get]
+// @Router /admin/students/{id}/performance [get]
 func (h *PerformanceHandler) AdminListStudentPerformance(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := c.Param("id")
 
 	var performances []domain.PerformanceHistory
 	if err := h.db.Where("student_id = ?", studentID).Order("date desc").Find(&performances).Error; err != nil {

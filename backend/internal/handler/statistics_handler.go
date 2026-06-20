@@ -84,16 +84,16 @@ func (h *StatisticsHandler) GetStudentStatistics(c *gin.Context) {
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
-// @Param student_id path string true "شناسه دانشجو"
+// @Param id path string true "شناسه دانشجو"
 // @Param from query string false "تاریخ شروع (جلالی YYYY/MM/DD)"
 // @Param to query string false "تاریخ پایان (جلالی YYYY/MM/DD)"
 // @Success 200 {object} ExamStatistics "آمار عملکرد"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
 // @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/statistics [get]
+// @Router /admin/students/{id}/statistics [get]
 func (h *StatisticsHandler) AdminGetStudentStatistics(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := c.Param("id")
 
 	// Verify student exists
 	var student domain.Student
