@@ -22,6 +22,16 @@ type CreateMistakeInput struct {
 	DynamicFields  map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
 }
 
+// UpdateMistakeInput داده‌های ورودی برای بروزرسانی اشتباه
+type UpdateMistakeInput struct {
+	ExamID         *string                `json:"exam_id" description:"شناسه آزمون (اختیاری)"`
+	SubjectExamID  *string                `json:"subject_exam_id" description:"شناسه درس آزمون (اختیاری)"`
+	QuestionNumber *int                   `json:"question_number" description:"شماره سؤال"`
+	Category       *string                `json:"category" description:"دسته‌بندی اشتباه"`
+	Notes          *string                `json:"notes" description:"یادداشت‌های توضیحی"`
+	DynamicFields  map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
+}
+
 // Deprecated: استفاده از CreateMistakeInput کنید
 type createMistakeInput struct {
 	ExamID         *string                `json:"exam_id"`
@@ -56,6 +66,10 @@ func (h *MistakeHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	if input.QuestionNumber <= 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "question_number must be greater than zero"})
+		return
+	}
 
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -84,7 +98,7 @@ func (h *MistakeHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, mistake)
+	c.JSON(http.StatusCreated, mistake)
 }
 
 // List godoc
@@ -150,4 +164,82 @@ func (h *MistakeHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// Update godoc
+// @Summary بروزرسانی اشتباه
+// @Description یک اشتباه ثبت‌شده را بروزرسانی می‌کند
+// @Tags اشتباهات
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "شناسه اشتباه"
+// @Param input body UpdateMistakeInput true "اطلاعات اشتباه"
+// @Success 200 {object} domain.Mistake "اشتباه با موفقیت بروزرسانی شد"
+// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 404 {object} ErrorResponse "اشتباه یافت نشد"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /mistakes/{id} [put]
+func (h *MistakeHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
+		return
+	}
+
+	var input UpdateMistakeInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+	if input.QuestionNumber != nil && *input.QuestionNumber <= 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "question_number must be greater than zero"})
+		return
+	}
+
+	var student domain.Student
+	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student profile not found"})
+		return
+	}
+
+	var mistake domain.Mistake
+	if err := h.db.First(&mistake, "id = ? AND student_id = ?", id, student.ID).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "mistake not found"})
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if input.ExamID != nil {
+		updates["exam_id"] = *input.ExamID
+	}
+	if input.SubjectExamID != nil {
+		updates["subject_exam_id"] = *input.SubjectExamID
+	}
+	if input.QuestionNumber != nil {
+		updates["question_number"] = *input.QuestionNumber
+	}
+	if input.Category != nil {
+		updates["category"] = *input.Category
+	}
+	if input.Notes != nil {
+		updates["notes"] = *input.Notes
+	}
+	if input.DynamicFields != nil {
+		updates["dynamic_fields"] = input.DynamicFields
+	}
+
+	if err := h.db.Model(&mistake).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update mistake"})
+		return
+	}
+
+	if err := h.db.First(&mistake, "id = ?", mistake.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to reload mistake"})
+		return
+	}
+
+	c.JSON(http.StatusOK, mistake)
 }

@@ -101,10 +101,13 @@ func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
 	jalaliDate := pkg.GregorianToJalaliString(recordDate)
 
 	if input.JalaliDate != "" {
-		if t, err := pkg.JalaliToGregorian(input.JalaliDate); err == nil {
-			recordDate = t
-			jalaliDate = input.JalaliDate
+		t, err := pkg.JalaliToGregorian(input.JalaliDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
+			return
 		}
+		recordDate = t
+		jalaliDate = input.JalaliDate
 	} else if input.Date != nil {
 		recordDate = *input.Date
 		jalaliDate = pkg.GregorianToJalaliString(recordDate)

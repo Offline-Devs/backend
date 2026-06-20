@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -122,19 +124,19 @@ func (h *AdminHandler) UpdateStudent(c *gin.Context) {
 
 	updates := map[string]interface{}{}
 	if input.FirstName != nil {
-		updates["first_name"] = *input.FirstName
+		updates["first_name"] = strings.TrimSpace(*input.FirstName)
 	}
 	if input.LastName != nil {
-		updates["last_name"] = *input.LastName
+		updates["last_name"] = strings.TrimSpace(*input.LastName)
 	}
 	if input.City != nil {
-		updates["city"] = *input.City
+		updates["city"] = strings.TrimSpace(*input.City)
 	}
 	if input.School != nil {
-		updates["school"] = *input.School
+		updates["school"] = strings.TrimSpace(*input.School)
 	}
 	if input.Major != nil {
-		updates["major"] = *input.Major
+		updates["major"] = strings.TrimSpace(*input.Major)
 	}
 	if input.IsApproved != nil {
 		updates["is_approved"] = *input.IsApproved
@@ -144,6 +146,11 @@ func (h *AdminHandler) UpdateStudent(c *gin.Context) {
 		} else {
 			updates["approval_date"] = nil
 		}
+	}
+
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no fields to update"})
+		return
 	}
 
 	if err := h.db.Model(&domain.Student{}).Where("id = ?", id).Updates(updates).Error; err != nil {
@@ -242,11 +249,11 @@ func (h *AdminHandler) CreateDynamicField(c *gin.Context) {
 	}
 
 	field := domain.DynamicFieldDefinition{
-		EntityType: input.EntityType,
-		Name:       input.Name,
-		Label:      input.Label,
-		FieldType:  input.FieldType,
-		Options:    input.Options,
+		EntityType: strings.TrimSpace(input.EntityType),
+		Name:       strings.TrimSpace(input.Name),
+		Label:      strings.TrimSpace(input.Label),
+		FieldType:  strings.TrimSpace(input.FieldType),
+		Options:    strings.TrimSpace(input.Options),
 		IsRequired: input.IsRequired,
 	}
 
@@ -255,7 +262,7 @@ func (h *AdminHandler) CreateDynamicField(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, field)
+	c.JSON(http.StatusCreated, field)
 }
 
 // UpdateDynamicField godoc
@@ -281,11 +288,11 @@ func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"entity_type": input.EntityType,
-		"name":        input.Name,
-		"label":       input.Label,
-		"field_type":  input.FieldType,
-		"options":     input.Options,
+		"entity_type": strings.TrimSpace(input.EntityType),
+		"name":        strings.TrimSpace(input.Name),
+		"label":       strings.TrimSpace(input.Label),
+		"field_type":  strings.TrimSpace(input.FieldType),
+		"options":     strings.TrimSpace(input.Options),
 		"is_required": input.IsRequired,
 	}
 
@@ -315,32 +322,24 @@ func (h *AdminHandler) DeleteDynamicField(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
 
-// ListStudentExams godoc
-// @Summary دریافت تمام آزمون‌های یک دانشجو
+// GetStudentExams godoc
+// @Summary دریافت آزمون‌های یک دانشجو (مدیر)
 // @Description مدیر می‌تواند تمام آزمون‌های یک دانشجو را مشاهده کند
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
 // @Param student_id path string true "شناسه دانشجو"
-// @Success 200 {array} domain.Exam "لیست آزمون‌های دانشجو"
+// @Success 200 {array} domain.Exam "لیست آزمون‌ها"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{student_id}/exams [get]
-func (h *AdminHandler) ListStudentExams(c *gin.Context) {
+func (h *AdminHandler) GetStudentExams(c *gin.Context) {
 	studentID := c.Param("student_id")
-
-	// Verify student exists
-	var student domain.Student
-	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
-		return
-	}
 
 	var exams []domain.Exam
 	if err := h.db.Where("student_id = ?", studentID).
-		Preload("Subjects").
 		Order("exam_date desc").
+		Preload("Subjects").
 		Find(&exams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load exams"})
 		return
@@ -349,27 +348,19 @@ func (h *AdminHandler) ListStudentExams(c *gin.Context) {
 	c.JSON(http.StatusOK, exams)
 }
 
-// ListStudentMistakes godoc
-// @Summary دریافت تمام اشتباهات یک دانشجو
-// @Description مدیر می‌تواند تمام اشتباهات یک دانشجو را مشاهده کند
+// GetStudentMistakes godoc
+// @Summary دریافت اشتباهات یک دانشجو (مدیر)
+// @Description مدیر می‌تواند تمام اشتباهات ثبت‌شده یک دانشجو را مشاهده کند
 // @Tags مدیریت
 // @Security BearerAuth
 // @Produce json
 // @Param student_id path string true "شناسه دانشجو"
-// @Success 200 {array} domain.Mistake "لیست اشتباهات دانشجو"
+// @Success 200 {array} domain.Mistake "لیست اشتباهات"
 // @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{student_id}/mistakes [get]
-func (h *AdminHandler) ListStudentMistakes(c *gin.Context) {
+func (h *AdminHandler) GetStudentMistakes(c *gin.Context) {
 	studentID := c.Param("student_id")
-
-	// Verify student exists
-	var student domain.Student
-	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
-		return
-	}
 
 	var mistakes []domain.Mistake
 	if err := h.db.Where("student_id = ?", studentID).
@@ -380,4 +371,84 @@ func (h *AdminHandler) ListStudentMistakes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mistakes)
+}
+
+// GetAllStudentsWithStats godoc
+// @Summary دریافت لیست دانشجویان با آمار (مدیر)
+// @Description لیست تمام دانشجویان به همراه آمار خلاصه
+// @Tags مدیریت
+// @Security BearerAuth
+// @Produce json
+// @Param page query int false "شماره صفحه" default(1)
+// @Param limit query int false "تعداد نتایج در هر صفحه" default(20)
+// @Param approved query string false "فیلتر وضعیت تایید (true, false, all)" default(all)
+// @Success 200 {object} ListResponse "لیست دانشجویان"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /admin/students/with-stats [get]
+func (h *AdminHandler) GetAllStudentsWithStats(c *gin.Context) {
+	page := 1
+	limit := 20
+	if p, ok := c.GetQuery("page"); ok {
+		if pInt, err := strconv.Atoi(p); err == nil && pInt > 0 {
+			page = pInt
+		}
+	}
+	if l, ok := c.GetQuery("limit"); ok {
+		if lInt, err := strconv.Atoi(l); err == nil && lInt > 0 && lInt <= 100 {
+			limit = lInt
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	query := h.db.Model(&domain.Student{}).Preload("User")
+
+	// Filter by approval status
+	if approved := c.Query("approved"); approved != "" && approved != "all" {
+		if approved == "true" {
+			query = query.Where("is_approved = ?", true)
+		} else if approved == "false" {
+			query = query.Where("is_approved = ?", false)
+		}
+	}
+
+	var total int64
+	query.Count(&total)
+
+	var students []domain.Student
+	if err := query.Order("created_at desc").
+		Offset(offset).
+		Limit(limit).
+		Find(&students).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load students"})
+		return
+	}
+
+	// Add statistics for each student
+	type StudentWithStats struct {
+		domain.Student
+		ExamCount    int64 `json:"exam_count"`
+		MistakeCount int64 `json:"mistake_count"`
+	}
+
+	studentsWithStats := make([]StudentWithStats, 0, len(students))
+	for _, student := range students {
+		var examCount, mistakeCount int64
+		h.db.Model(&domain.Exam{}).Where("student_id = ?", student.ID).Count(&examCount)
+		h.db.Model(&domain.Mistake{}).Where("student_id = ?", student.ID).Count(&mistakeCount)
+
+		studentsWithStats = append(studentsWithStats, StudentWithStats{
+			Student:      student,
+			ExamCount:    examCount,
+			MistakeCount: mistakeCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, ListResponse{
+		Data:  studentsWithStats,
+		Total: total,
+		Page:  page,
+		Limit: limit,
+	})
 }
