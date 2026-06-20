@@ -23,6 +23,10 @@ func NewJWTService(accessSecret, refreshSecret string, accessTTLSeconds, refresh
     }
 }
 
+func (j *JWTService) AccessTTLSeconds() int64 {
+    return int64(j.accessTTL / time.Second)
+}
+
 func (j *JWTService) GenerateAccessToken(userID, role string) (string, error) {
     now := time.Now()
     claims := jwt.MapClaims{

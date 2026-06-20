@@ -181,7 +181,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         user,
-		ExpiresIn:    3600,
+		ExpiresIn:    h.jwtService.AccessTTLSeconds(),
 	})
 }
 
@@ -230,6 +230,6 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, TokenResponse{
 		AccessToken: accessToken,
-		ExpiresIn:   3600,
+		ExpiresIn:   h.jwtService.AccessTTLSeconds(),
 	})
 }
