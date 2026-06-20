@@ -42,26 +42,6 @@ type UpdateStudentInput struct {
 	IsApproved *bool   `json:"is_approved" description:"وضعیت تایید دانشجو"`
 }
 
-// Deprecated: استفاده از CreateDynamicFieldInput کنید
-type createDynamicFieldInput struct {
-	EntityType string `json:"entity_type" binding:"required"`
-	Name       string `json:"name" binding:"required"`
-	Label      string `json:"label"`
-	FieldType  string `json:"field_type" binding:"required"`
-	Options    string `json:"options"`
-	IsRequired bool   `json:"is_required"`
-}
-
-// Deprecated: استفاده از UpdateStudentInput کنید
-type updateStudentInput struct {
-	FirstName  *string `json:"first_name"`
-	LastName   *string `json:"last_name"`
-	City       *string `json:"city"`
-	School     *string `json:"school"`
-	Major      *string `json:"major"`
-	IsApproved *bool   `json:"is_approved"`
-}
-
 func NewAdminHandler(db *gorm.DB) *AdminHandler {
 	return &AdminHandler{db: db}
 }
