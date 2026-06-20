@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
@@ -15,11 +14,11 @@ type StatisticsHandler struct {
 
 // ExamStatistics آمار آزمون‌ها
 type ExamStatistics struct {
-	TotalExams       int64                  `json:"total_exams"`
-	AverageScore     float64                `json:"average_score"`
-	SubjectStats     []SubjectStatistics    `json:"subject_stats"`
-	TrendData        []TrendPoint           `json:"trend_data"`
-	MistakesByReason map[string]int         `json:"mistakes_by_reason"`
+	TotalExams       int64               `json:"total_exams"`
+	AverageScore     float64             `json:"average_score"`
+	SubjectStats     []SubjectStatistics `json:"subject_stats"`
+	TrendData        []TrendPoint        `json:"trend_data"`
+	MistakesByReason map[string]int      `json:"mistakes_by_reason"`
 }
 
 // SubjectStatistics آمار دروس
@@ -249,17 +248,15 @@ func (h *StatisticsHandler) GetDashboardSummary(c *gin.Context) {
 		Preload("Subjects").
 		Find(&recentExams)
 
-	// Get last 30 days statistics
-	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	stats, _ := h.calculateStatistics(student.ID, "", "")
 
 	summary := map[string]interface{}{
-		"total_exams":      examCount,
-		"total_mistakes":   mistakeCount,
-		"recent_exams":     recentExams,
-		"average_score":    stats.AverageScore,
-		"is_approved":      student.IsApproved,
-		"has_study_plan":   false, // Will be calculated from performance history
+		"total_exams":    examCount,
+		"total_mistakes": mistakeCount,
+		"recent_exams":   recentExams,
+		"average_score":  stats.AverageScore,
+		"is_approved":    student.IsApproved,
+		"has_study_plan": false,
 	}
 
 	// Check if student has any study plans
