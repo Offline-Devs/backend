@@ -36,11 +36,15 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	{
 		authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider, cfg.AdminPhones)
 		blogH := handler.NewBlogHandler(db)
+		subjectsH := handler.NewSubjectsHandler()
+		
 		api.POST("/auth/request-otp", authH.RequestOTP)
 		api.POST("/auth/verify-otp", authH.VerifyOTP)
 		api.POST("/auth/refresh", authH.RefreshToken)
 		api.GET("/blog", blogH.PublicList)
 		api.GET("/blog/:slug", blogH.PublicGet)
+		api.GET("/subjects", subjectsH.GetSubjectsByMajor)
+		api.GET("/majors", subjectsH.GetAllMajors)
 
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(jwtService))
@@ -60,6 +64,17 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			protected.GET("/mistakes", mistakeH.List)
 			protected.DELETE("/mistakes/:id", mistakeH.Delete)
 
+			statisticsH := handler.NewStatisticsHandler(db)
+			protected.GET("/students/statistics", statisticsH.GetStudentStatistics)
+			protected.GET("/students/dashboard", statisticsH.GetDashboardSummary)
+
+			performanceH := handler.NewPerformanceHandler(db)
+			protected.GET("/students/performance", performanceH.GetStudentPerformance)
+
+			uploadH := handler.NewUploadHandler(cfg.UploadPath)
+			protected.POST("/upload", uploadH.UploadFile)
+			protected.POST("/upload/multiple", uploadH.UploadMultiple)
+
 			admin := protected.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
@@ -69,6 +84,13 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				admin.PUT("/students/:id", adminH.UpdateStudent)
 				admin.PUT("/students/:id/approve", adminH.ApproveStudent)
 				admin.DELETE("/students/:id", adminH.DeleteStudent)
+				admin.GET("/students/:student_id/exams", adminH.ListStudentExams)
+				admin.GET("/students/:student_id/mistakes", adminH.ListStudentMistakes)
+				admin.GET("/students/:student_id/statistics", statisticsH.AdminGetStudentStatistics)
+				admin.GET("/students/:student_id/performance", performanceH.AdminListStudentPerformance)
+				admin.POST("/students/:student_id/performance", performanceH.AdminCreatePerformance)
+				admin.PUT("/performance/:id", performanceH.AdminUpdatePerformance)
+				admin.DELETE("/performance/:id", performanceH.AdminDeletePerformance)
 				admin.GET("/dynamic-fields", adminH.GetDynamicFields)
 				admin.POST("/dynamic-fields", adminH.CreateDynamicField)
 				admin.PUT("/dynamic-fields/:id", adminH.UpdateDynamicField)

@@ -314,3 +314,70 @@ func (h *AdminHandler) DeleteDynamicField(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
+
+// ListStudentExams godoc
+// @Summary دریافت تمام آزمون‌های یک دانشجو
+// @Description مدیر می‌تواند تمام آزمون‌های یک دانشجو را مشاهده کند
+// @Tags مدیریت
+// @Security BearerAuth
+// @Produce json
+// @Param student_id path string true "شناسه دانشجو"
+// @Success 200 {array} domain.Exam "لیست آزمون‌های دانشجو"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /admin/students/{student_id}/exams [get]
+func (h *AdminHandler) ListStudentExams(c *gin.Context) {
+	studentID := c.Param("student_id")
+
+	// Verify student exists
+	var student domain.Student
+	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
+		return
+	}
+
+	var exams []domain.Exam
+	if err := h.db.Where("student_id = ?", studentID).
+		Preload("Subjects").
+		Order("exam_date desc").
+		Find(&exams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load exams"})
+		return
+	}
+
+	c.JSON(http.StatusOK, exams)
+}
+
+// ListStudentMistakes godoc
+// @Summary دریافت تمام اشتباهات یک دانشجو
+// @Description مدیر می‌تواند تمام اشتباهات یک دانشجو را مشاهده کند
+// @Tags مدیریت
+// @Security BearerAuth
+// @Produce json
+// @Param student_id path string true "شناسه دانشجو"
+// @Success 200 {array} domain.Mistake "لیست اشتباهات دانشجو"
+// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
+// @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
+// @Failure 500 {object} ErrorResponse "خطای سرور"
+// @Router /admin/students/{student_id}/mistakes [get]
+func (h *AdminHandler) ListStudentMistakes(c *gin.Context) {
+	studentID := c.Param("student_id")
+
+	// Verify student exists
+	var student domain.Student
+	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
+		return
+	}
+
+	var mistakes []domain.Mistake
+	if err := h.db.Where("student_id = ?", studentID).
+		Order("created_at desc").
+		Find(&mistakes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load mistakes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, mistakes)
+}
