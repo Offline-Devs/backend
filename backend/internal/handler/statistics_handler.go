@@ -43,6 +43,13 @@ func NewStatisticsHandler(db *gorm.DB) *StatisticsHandler {
 	return &StatisticsHandler{db: db}
 }
 
+func statisticsStudentParam(c *gin.Context) string {
+	if id := c.Param("id"); id != "" {
+		return id
+	}
+	return c.Param("student_id")
+}
+
 // GetStudentStatistics godoc
 // @Summary دریافت آمار عملکرد دانشجو
 // @Description آمار کامل عملکرد دانشجو در آزمون‌ها را دریافت می‌کند
@@ -93,7 +100,7 @@ func (h *StatisticsHandler) GetStudentStatistics(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{student_id}/statistics [get]
 func (h *StatisticsHandler) AdminGetStudentStatistics(c *gin.Context) {
-	studentID := c.Param("student_id")
+	studentID := statisticsStudentParam(c)
 
 	// Verify student exists
 	var student domain.Student

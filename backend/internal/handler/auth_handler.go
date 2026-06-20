@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -108,8 +107,6 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate otp"})
 		return
 	}
-
-	log.Printf("OTP requested for %s: %s", input.Phone, otp)
 
 	resp := OTPResponse{Message: "otp sent"}
 	if h.otpProvider == "mock" {
