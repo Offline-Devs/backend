@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /
 definitions:
   github_com_yourusername_noshirvani-academy_backend_internal_domain.BlogPost:
     properties:
@@ -524,7 +524,6 @@ definitions:
 externalDocs:
   description: توضیحات API
   url: https://github.com/Offline-Devs/noshirvani-academy
-host: localhost:8080
 info:
   contact:
     email: support@noshirvaniacademy.com

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/config"
 	"github.com/yourusername/noshirvani-academy/backend/internal/handler"
@@ -8,9 +9,12 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
 	"github.com/yourusername/noshirvani-academy/backend/internal/middleware"
 	"gorm.io/gorm"
+	"net/http"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/yourusername/noshirvani-academy/backend/docs"
 )
 
 func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
@@ -30,9 +34,40 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger-doc/doc.json", func(c *gin.Context) {
+		doc := docs.SwaggerInfo.ReadDoc()
+		if doc == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Swagger doc is empty. Did you import the docs package?"})
+			return
+		}
 
-	api := r.Group("/api/v1")
+		var swaggerMap map[string]interface{}
+		if err := json.Unmarshal([]byte(doc), &swaggerMap); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse swagger doc: " + err.Error()})
+			return
+		}
+
+		// Overrides host & basePath dynamically per-request
+		swaggerMap["host"] = c.Request.Host
+
+		prefix := c.GetHeader("X-Forwarded-Prefix")
+		if prefix != "" {
+			swaggerMap["basePath"] = prefix
+		} else {
+			swaggerMap["basePath"] = "/"
+		}
+
+		c.JSON(http.StatusOK, swaggerMap)
+	})
+
+	// 2. Point ginSwagger to the new non-conflicting path
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		// Use a relative path so it automatically includes Nginx's '/api/v1' prefix
+		ginSwagger.URL("../swagger-doc/doc.json"),
+	))
+
+	api := r.Group("/")
 	{
 		authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider, cfg.AdminPhones)
 		blogH := handler.NewBlogHandler(db)
