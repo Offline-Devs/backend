@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/yourusername/noshirvani-academy/backend/pkg"
 )
 
 // Rate limiting constants
@@ -84,6 +85,9 @@ func NewOTPStore(redisAddr, apiKey, templateID string) *OTPStore {
 
 // GenerateOTP generates a new OTP code and stores it in Redis with 2-minute TTL
 func (s *OTPStore) GenerateOTP(phone string) (string, error) {
+	// Normalize phone to canonical format (989123456789)
+	phone = pkg.NormalizePhone(phone)
+
 	ctx := context.Background()
 
 	// Check rate limits
@@ -176,9 +180,8 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 		return nil
 	}
 
-	// Normalize phone number for SMS.ir
-	// SMS.ir expects: 09xxxxxxxxx (without +98 prefix)
-	normalizedPhone := normalizePhoneForSMSIR(phone)
+	// Convert canonical format (989123456789) to SMS.ir format (09123456789)
+	smsirPhone := convertToSMSIRFormat(phone)
 
 	// Parse template ID
 	templateIDInt, err := strconv.Atoi(s.templateID)
@@ -188,7 +191,7 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 
 	// Build request with template
 	reqBody := smsirVerifyRequest{
-		Mobile:     normalizedPhone,
+		Mobile:     smsirPhone,
 		TemplateID: templateIDInt,
 		Parameters: []smsirParameter{
 			{
@@ -239,6 +242,9 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 
 // VerifyOTP checks if the provided code matches the stored OTP in Redis
 func (s *OTPStore) VerifyOTP(phone, code string) bool {
+	// Normalize phone to canonical format (989123456789)
+	phone = pkg.NormalizePhone(phone)
+
 	ctx := context.Background()
 	key := fmt.Sprintf("otp:%s", phone)
 
@@ -280,6 +286,17 @@ func normalizePhoneForSMSIR(phone string) string {
 	}
 
 	return phone
+}
+
+// convertToSMSIRFormat converts canonical format (989123456789) to SMS.ir format (09123456789)
+func convertToSMSIRFormat(phone string) string {
+	// phone is already in canonical format: 989123456789
+	// Convert to SMS.ir format: 09123456789
+	if strings.HasPrefix(phone, "98") {
+		return "0" + phone[2:]
+	}
+	// Fallback in case format is different
+	return normalizePhoneForSMSIR(phone)
 }
 
 func generateNumericOTP(length int) (string, error) {

@@ -360,7 +360,7 @@ definitions:
         example: otp sent
         type: string
       otp:
-        example: "123456"
+        example: '123456'
         type: string
     type: object
   handler.RefreshTokenInput:
@@ -373,7 +373,7 @@ definitions:
   handler.RequestOTPInput:
     properties:
       phone:
-        example: "+989123456789"
+        example: '+989123456789'
         type: string
     required:
     - phone
@@ -494,10 +494,10 @@ definitions:
   handler.VerifyOTPInput:
     properties:
       code:
-        example: "123456"
+        example: '123456'
         type: string
       phone:
-        example: "+989123456789"
+        example: '+989123456789'
         type: string
     required:
     - code
@@ -512,15 +512,15 @@ info:
     email: support@noshirvaniacademy.com
     name: تیم توسعه اپلیکیشن
     url: https://github.com/Offline-Devs
-  description: |-
-    API برای سیستم مدیریت آکادمی نوشیروانی
-    شامل خدماتی برای احراز هویت، مدیریت دانشجویان، آزمون‌ها، اشتباهات و مقالات بلاگ
+  description: 'API برای سیستم مدیریت آکادمی نوشیروانی
+
+    شامل خدماتی برای احراز هویت، مدیریت دانشجویان، آزمون‌ها، اشتباهات و مقالات بلاگ'
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
   termsOfService: http://swagger.io/terms/
   title: نوشیروانی آکادمی API
-  version: "1.0"
+  version: '1.0'
 paths:
   /admin/dynamic-fields:
     get:
@@ -533,17 +533,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست فیلدهای سفارشی
           schema:
             items:
               $ref: '#/definitions/domain.DynamicFieldDefinition'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -566,19 +566,19 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: فیلد با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/domain.DynamicFieldDefinition'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -597,17 +597,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: فیلد با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -635,21 +635,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: فیلد با موفقیت بروزرسانی شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -668,17 +668,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: رکورد با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -706,21 +706,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: رکورد با موفقیت بروزرسانی شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -735,17 +735,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست دانشجویان
           schema:
             items:
               $ref: '#/definitions/domain.Student'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -764,17 +764,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: دانشجو با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -794,19 +794,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: جزئیات دانشجو
           schema:
             $ref: '#/definitions/domain.Student'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -834,21 +834,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: دانشجو با موفقیت بروزرسانی شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -867,17 +867,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: دانشجو با موفقیت تایید شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -898,17 +898,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست آزمون‌ها
           schema:
             items:
               $ref: '#/definitions/domain.Exam'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -929,17 +929,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست اشتباهات
           schema:
             items:
               $ref: '#/definitions/domain.Mistake'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -960,17 +960,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست رکوردهای عملکرد
           schema:
             items:
               $ref: '#/definitions/domain.PerformanceHistory'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -999,23 +999,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: رکورد با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/domain.PerformanceHistory'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1044,19 +1044,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: آمار عملکرد
           schema:
             $ref: '#/definitions/handler.ExamStatistics'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1087,15 +1087,15 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست دانشجویان
           schema:
             $ref: '#/definitions/handler.ListResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1119,19 +1119,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: توکن جدید با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/handler.TokenResponse'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: توکن تازه‌سازی نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1153,15 +1153,15 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: کد OTP با موفقیت ارسال شد
           schema:
             $ref: '#/definitions/handler.OTPResponse'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1183,23 +1183,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: احراز هویت موفق
           schema:
             $ref: '#/definitions/handler.AuthResponse'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: کد OTP نامعتبر یا منقضی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "403":
+        '403':
           description: کاربر غیرفعال است
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1212,13 +1212,13 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست نوشته‌های منتشر‌شده
           schema:
             items:
               $ref: '#/definitions/domain.BlogPost'
             type: array
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1239,19 +1239,19 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: نوشته با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/domain.BlogPost'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1270,17 +1270,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: نوشته با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1308,21 +1308,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: نوشته با موفقیت بروزرسانی شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1341,17 +1341,17 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: نوشته با موفقیت منتشر شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1373,15 +1373,15 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: نوشته بلاگ
           schema:
             $ref: '#/definitions/domain.BlogPost'
-        "404":
+        '404':
           description: نوشته یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1394,21 +1394,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست آزمون‌ها
           schema:
             items:
               $ref: '#/definitions/domain.Exam'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1431,23 +1431,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: آزمون با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/domain.Exam'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1466,21 +1466,21 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: آزمون با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1500,19 +1500,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: جزئیات آزمون
           schema:
             $ref: '#/definitions/domain.Exam'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: آزمون یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1540,23 +1540,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: آزمون با موفقیت بروزرسانی شد
           schema:
             $ref: '#/definitions/domain.Exam'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: آزمون یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1571,7 +1571,7 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: سرور فعال است
           schema:
             additionalProperties:
@@ -1586,7 +1586,7 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست رشته‌ها و دروس
           schema:
             items:
@@ -1601,21 +1601,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست اشتباهات
           schema:
             items:
               $ref: '#/definitions/domain.Mistake'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1638,23 +1638,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: اشتباه با موفقیت ایجاد شد
           schema:
             $ref: '#/definitions/domain.Mistake'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1673,21 +1673,21 @@ paths:
         required: true
         type: string
       responses:
-        "200":
+        '200':
           description: اشتباه با موفقیت حذف شد
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1715,23 +1715,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: اشتباه با موفقیت بروزرسانی شد
           schema:
             $ref: '#/definitions/domain.Mistake'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: اشتباه یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1746,20 +1746,20 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: خلاصه داشبورد
           schema:
             additionalProperties: true
             type: object
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1775,21 +1775,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست رکوردهای عملکرد
           schema:
             items:
               $ref: '#/definitions/domain.PerformanceHistory'
             type: array
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1804,19 +1804,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: پروفایل دانشجو
           schema:
             $ref: '#/definitions/domain.Student'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1839,19 +1839,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: پروفایل با موفقیت ایجاد/بروزرسانی شد
           schema:
             $ref: '#/definitions/domain.Student'
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1875,19 +1875,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: آمار عملکرد
           schema:
             $ref: '#/definitions/handler.ExamStatistics'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "404":
+        '404':
           description: پروفایل دانشجو یافت نشد
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1908,11 +1908,11 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: لیست دروس
           schema:
             $ref: '#/definitions/handler.SubjectConfig'
-        "400":
+        '400':
           description: رشته نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1938,19 +1938,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: فایل با موفقیت آپلود شد
           schema:
             $ref: '#/definitions/handler.UploadResponse'
-        "400":
+        '400':
           description: درخواست نامعتبر یا فایل خیلی بزرگ است
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -1978,21 +1978,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: فایل‌ها با موفقیت آپلود شدند
           schema:
             items:
               $ref: '#/definitions/handler.UploadResponse'
             type: array
-        "400":
+        '400':
           description: درخواست نامعتبر
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "401":
+        '401':
           description: عدم اجازه دسترسی
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
-        "500":
+        '500':
           description: خطای سرور
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
@@ -2003,8 +2003,8 @@ paths:
       - آپلود
 securityDefinitions:
   BearerAuth:
-    description: '"توکن JWT - فرمت: Bearer <token>"'
+    description: 'Bearer token (JWT). Usage: Authorization: Bearer <your_token>'
     in: header
     name: Authorization
     type: apiKey
-swagger: "2.0"
+swagger: '2.0'

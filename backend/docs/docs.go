@@ -3093,7 +3093,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "\"توکن JWT - فرمت: Bearer \u003ctoken\u003e\"",
+            "description": "JWT Token must be provided with \"Bearer \" prefix",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

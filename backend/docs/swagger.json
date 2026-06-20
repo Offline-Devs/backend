@@ -3087,10 +3087,11 @@
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "\"توکن JWT - فرمت: Bearer \u003ctoken\u003e\"",
+            "description": "Bearer token (JWT). Usage: Authorization: Bearer <your_token>",
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header"
+            "in": "header",
+            "x-example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         }
     },
     "externalDocs": {

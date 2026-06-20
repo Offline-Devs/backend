@@ -28,10 +28,10 @@ import (
 // @host      localhost:8080
 // @BasePath  /api/v1
 
-// @securityDefinitions.apikey BearerAuth
+// @securityDefinitions.apiKey BearerAuth
 // @in header
 // @name Authorization
-// @description "توکن JWT - فرمت: Bearer <token>"
+// @description JWT Token must be provided with "Bearer " prefix
 
 // @externalDocs.description توضیحات API
 // @externalDocs.url https://github.com/Offline-Devs/noshirvani-academy

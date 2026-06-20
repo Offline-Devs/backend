@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/yourusername/noshirvani-academy/backend/pkg"
 )
 
 type Config struct {
@@ -90,7 +92,11 @@ func splitCSV(value string) []string {
 func phoneSet(value string) map[string]bool {
 	phones := map[string]bool{}
 	for _, phone := range splitCSV(value) {
-		phones[phone] = true
+		// Normalize phone number to handle different formats (09xxx, +989xxx, 989xxx)
+		normalizedPhone := pkg.NormalizePhone(phone)
+		if normalizedPhone != "" {
+			phones[normalizedPhone] = true
+		}
 	}
 	return phones
 }

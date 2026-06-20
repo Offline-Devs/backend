@@ -8,6 +8,7 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/auth"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
+	"github.com/yourusername/noshirvani-academy/backend/pkg"
 	"gorm.io/gorm"
 )
 
@@ -93,7 +94,10 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 		return
 	}
 
-	otp, err := h.otpStore.GenerateOTP(input.Phone)
+	// Normalize phone number to handle different formats (09xxx, +989xxx, 989xxx)
+	normalizedPhone := pkg.NormalizePhone(input.Phone)
+
+	otp, err := h.otpStore.GenerateOTP(normalizedPhone)
 	if err != nil {
 		// Check if it's a rate limit error
 		var rateLimitErr *sms.RateLimitError
@@ -135,22 +139,26 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if !h.otpStore.VerifyOTP(input.Phone, input.Code) {
+	// Normalize phone number to handle different formats (09xxx, +989xxx, 989xxx)
+	normalizedPhone := pkg.NormalizePhone(input.Phone)
+
+	if !h.otpStore.VerifyOTP(normalizedPhone, input.Code) {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid or expired otp"})
 		return
 	}
 
 	var user domain.User
-	if err := h.db.Where("phone = ?", input.Phone).First(&user).Error; err != nil {
+	if err := h.db.Where("phone = ?", normalizedPhone).First(&user).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load user"})
 			return
 		}
 		role := "student"
-		if h.adminPhones[input.Phone] {
+		// Check if the normalized phone is in the admin phones list
+		if h.adminPhones[normalizedPhone] {
 			role = "admin"
 		}
-		user = domain.User{Phone: input.Phone, Role: role, IsActive: true}
+		user = domain.User{Phone: normalizedPhone, Role: role, IsActive: true}
 		if err := h.db.Create(&user).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create user"})
 			return
