@@ -110,6 +110,31 @@ definitions:
       updated_at:
         type: string
     type: object
+  github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory:
+    properties:
+      created_at:
+        type: string
+      date:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      files:
+        type: string
+      id:
+        type: string
+      jalali_date:
+        type: string
+      notes:
+        type: string
+      student:
+        $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student'
+      student_id:
+        type: string
+      study_plan:
+        type: string
+      updated_at:
+        type: string
+    type: object
   github_com_yourusername_noshirvani-academy_backend_internal_domain.Student:
     properties:
       approval_date:
@@ -299,10 +324,53 @@ definitions:
       subject_exam_id:
         type: string
     type: object
+  internal_handler.CreatePerformanceInput:
+    properties:
+      date:
+        type: string
+      files:
+        type: string
+      jalali_date:
+        example: 1400/01/01
+        type: string
+      notes:
+        type: string
+      study_plan:
+        type: string
+    type: object
   internal_handler.ErrorResponse:
     properties:
       error:
         type: string
+    type: object
+  internal_handler.ExamStatistics:
+    properties:
+      average_score:
+        type: number
+      mistakes_by_reason:
+        additionalProperties:
+          type: integer
+        type: object
+      subject_stats:
+        items:
+          $ref: '#/definitions/internal_handler.SubjectStatistics'
+        type: array
+      total_exams:
+        type: integer
+      trend_data:
+        items:
+          $ref: '#/definitions/internal_handler.TrendPoint'
+        type: array
+    type: object
+  internal_handler.ListResponse:
+    properties:
+      data: {}
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
     type: object
   internal_handler.OTPResponse:
     properties:
@@ -328,6 +396,30 @@ definitions:
     required:
     - phone
     type: object
+  internal_handler.SubjectConfig:
+    properties:
+      major:
+        type: string
+      subjects:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_handler.SubjectStatistics:
+    properties:
+      blank:
+        type: integer
+      correct:
+        type: integer
+      percentage:
+        type: number
+      subject_name:
+        type: string
+      total_questions:
+        type: integer
+      wrong:
+        type: integer
+    type: object
   internal_handler.TokenResponse:
     properties:
       access_token:
@@ -335,6 +427,63 @@ definitions:
       expires_in:
         example: 3600
         type: integer
+    type: object
+  internal_handler.TrendPoint:
+    properties:
+      date:
+        type: string
+      exam_count:
+        type: integer
+      jalali_date:
+        type: string
+      score:
+        type: number
+    type: object
+  internal_handler.UpdateExamInput:
+    properties:
+      dynamic_fields:
+        additionalProperties: true
+        type: object
+      exam_date:
+        type: string
+      jalali_date:
+        example: 1400/01/01
+        type: string
+      major:
+        type: string
+      subjects:
+        items:
+          $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam'
+        type: array
+      title:
+        type: string
+      total_subjects:
+        type: integer
+    type: object
+  internal_handler.UpdateMistakeInput:
+    properties:
+      category:
+        type: string
+      dynamic_fields:
+        additionalProperties: true
+        type: object
+      exam_id:
+        type: string
+      notes:
+        type: string
+      question_number:
+        type: integer
+      subject_exam_id:
+        type: string
+    type: object
+  internal_handler.UpdatePerformanceInput:
+    properties:
+      files:
+        type: string
+      notes:
+        type: string
+      study_plan:
+        type: string
     type: object
   internal_handler.UpdateStudentInput:
     properties:
@@ -349,6 +498,15 @@ definitions:
       major:
         type: string
       school:
+        type: string
+    type: object
+  internal_handler.UploadResponse:
+    properties:
+      filename:
+        type: string
+      size:
+        type: integer
+      url:
         type: string
     type: object
   internal_handler.VerifyOTPInput:
@@ -518,6 +676,77 @@ paths:
       summary: بروزرسانی فیلد سفارشی
       tags:
       - مدیریت
+  /admin/performance/{id}:
+    delete:
+      description: مدیر می‌تواند رکورد عملکرد را حذف کند
+      parameters:
+      - description: شناسه رکورد عملکرد
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: رکورد با موفقیت حذف شد
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: حذف رکورد عملکرد (مدیر)
+      tags:
+      - مدیریت
+    put:
+      consumes:
+      - application/json
+      description: مدیر می‌تواند رکورد عملکرد دانشجو را بروزرسانی کند
+      parameters:
+      - description: شناسه رکورد عملکرد
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: اطلاعات جدید
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdatePerformanceInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: رکورد با موفقیت بروزرسانی شد
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: درخواست نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: بروزرسانی رکورد عملکرد (مدیر)
+      tags:
+      - مدیریت
   /admin/students:
     get:
       description: لیست تمام دانشجویان را دریافت می‌کند (فقط برای مدیران)
@@ -673,6 +902,224 @@ paths:
       security:
       - BearerAuth: []
       summary: تایید دانشجو
+      tags:
+      - مدیریت
+  /admin/students/{student_id}/exams:
+    get:
+      description: مدیر می‌تواند تمام آزمون‌های یک دانشجو را مشاهده کند
+      parameters:
+      - description: شناسه دانشجو
+        in: path
+        name: student_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست آزمون‌ها
+          schema:
+            items:
+              $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam'
+            type: array
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت آزمون‌های یک دانشجو (مدیر)
+      tags:
+      - مدیریت
+  /admin/students/{student_id}/mistakes:
+    get:
+      description: مدیر می‌تواند تمام اشتباهات ثبت‌شده یک دانشجو را مشاهده کند
+      parameters:
+      - description: شناسه دانشجو
+        in: path
+        name: student_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست اشتباهات
+          schema:
+            items:
+              $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake'
+            type: array
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت اشتباهات یک دانشجو (مدیر)
+      tags:
+      - مدیریت
+  /admin/students/{student_id}/performance:
+    get:
+      description: مدیر می‌تواند تمام رکوردهای عملکرد یک دانشجو را مشاهده کند
+      parameters:
+      - description: شناسه دانشجو
+        in: path
+        name: student_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست رکوردهای عملکرد
+          schema:
+            items:
+              $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory'
+            type: array
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت تاریخچه عملکرد یک دانشجو (مدیر)
+      tags:
+      - مدیریت
+    post:
+      consumes:
+      - application/json
+      description: مدیر می‌تواند برنامه مطالعاتی، یادداشت و فایل برای دانشجو اضافه
+        کند
+      parameters:
+      - description: شناسه دانشجو
+        in: path
+        name: student_id
+        required: true
+        type: string
+      - description: اطلاعات رکورد عملکرد
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.CreatePerformanceInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: رکورد با موفقیت ایجاد شد
+          schema:
+            $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory'
+        "400":
+          description: درخواست نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: دانشجو یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: ایجاد رکورد عملکرد برای دانشجو (مدیر)
+      tags:
+      - مدیریت
+  /admin/students/{student_id}/statistics:
+    get:
+      description: مدیر می‌تواند آمار کامل یک دانشجو را مشاهده کند
+      parameters:
+      - description: شناسه دانشجو
+        in: path
+        name: student_id
+        required: true
+        type: string
+      - description: تاریخ شروع (جلالی YYYY/MM/DD)
+        in: query
+        name: from
+        type: string
+      - description: تاریخ پایان (جلالی YYYY/MM/DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: آمار عملکرد
+          schema:
+            $ref: '#/definitions/internal_handler.ExamStatistics'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: دانشجو یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت آمار عملکرد یک دانشجو (مدیر)
+      tags:
+      - مدیریت
+  /admin/students/with-stats:
+    get:
+      description: لیست تمام دانشجویان به همراه آمار خلاصه
+      parameters:
+      - default: 1
+        description: شماره صفحه
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: تعداد نتایج در هر صفحه
+        in: query
+        name: limit
+        type: integer
+      - default: all
+        description: فیلتر وضعیت تایید (true, false, all)
+        in: query
+        name: approved
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست دانشجویان
+          schema:
+            $ref: '#/definitions/internal_handler.ListResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت لیست دانشجویان با آمار (مدیر)
       tags:
       - مدیریت
   /auth/refresh:
@@ -1092,6 +1539,50 @@ paths:
       summary: دریافت جزئیات آزمون
       tags:
       - آزمون‌ها
+    put:
+      consumes:
+      - application/json
+      description: یک آزمون موجود را بروزرسانی می‌کند
+      parameters:
+      - description: شناسه آزمون
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: اطلاعات آزمون
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdateExamInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: آزمون با موفقیت بروزرسانی شد
+          schema:
+            $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam'
+        "400":
+          description: درخواست نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: آزمون یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: بروزرسانی آزمون
+      tags:
+      - آزمون‌ها
   /health:
     get:
       description: بررسی می‌کند که آیا سرور در حال اجرا است
@@ -1107,6 +1598,21 @@ paths:
       summary: بررسی وضعیت سرور
       tags:
       - عمومی
+  /majors:
+    get:
+      description: لیست تمام رشته‌های موجود را دریافت می‌کند
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست رشته‌ها و دروس
+          schema:
+            items:
+              $ref: '#/definitions/internal_handler.SubjectConfig'
+            type: array
+      summary: دریافت تمام رشته‌ها
+      tags:
+      - دروس
   /mistakes:
     get:
       description: تمام اشتباهات ثبت‌شده برای دانشجو را دریافت می‌کند
@@ -1208,6 +1714,108 @@ paths:
       summary: حذف اشتباه
       tags:
       - اشتباهات
+    put:
+      consumes:
+      - application/json
+      description: یک اشتباه ثبت‌شده را بروزرسانی می‌کند
+      parameters:
+      - description: شناسه اشتباه
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: اطلاعات اشتباه
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdateMistakeInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: اشتباه با موفقیت بروزرسانی شد
+          schema:
+            $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake'
+        "400":
+          description: درخواست نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: اشتباه یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: بروزرسانی اشتباه
+      tags:
+      - اشتباهات
+  /students/dashboard:
+    get:
+      description: خلاصه‌ای از آمار کلی دانشجو برای نمایش در داشبورد
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: خلاصه داشبورد
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: پروفایل دانشجو یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت خلاصه داشبورد دانشجو
+      tags:
+      - آمار
+  /students/performance:
+    get:
+      description: تاریخچه عملکرد و برنامه‌های مطالعاتی دانشجو را دریافت می‌کند (فقط
+        خواندنی برای دانشجو)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست رکوردهای عملکرد
+          schema:
+            items:
+              $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory'
+            type: array
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: پروفایل دانشجو یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت تاریخچه عملکرد دانشجو
+      tags:
+      - عملکرد
   /students/profile:
     get:
       description: اطلاعات پروفایل دانشجویی را دریافت می‌کند
@@ -1270,6 +1878,147 @@ paths:
       summary: تکمیل یا بروزرسانی پروفایل دانشجو
       tags:
       - دانشجویان
+  /students/statistics:
+    get:
+      description: آمار کامل عملکرد دانشجو در آزمون‌ها را دریافت می‌کند
+      parameters:
+      - description: تاریخ شروع (جلالی YYYY/MM/DD)
+        in: query
+        name: from
+        type: string
+      - description: تاریخ پایان (جلالی YYYY/MM/DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: آمار عملکرد
+          schema:
+            $ref: '#/definitions/internal_handler.ExamStatistics'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: پروفایل دانشجو یافت نشد
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: دریافت آمار عملکرد دانشجو
+      tags:
+      - آمار
+  /subjects:
+    get:
+      description: لیست دروس مرتبط با یک رشته تحصیلی را دریافت می‌کند
+      parameters:
+      - description: نام رشته (ریاضی، تجربی، انسانی)
+        in: query
+        name: major
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: لیست دروس
+          schema:
+            $ref: '#/definitions/internal_handler.SubjectConfig'
+        "400":
+          description: رشته نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: دریافت دروس بر اساس رشته
+      tags:
+      - دروس
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: آپلود تصویر پروفایل یا فایل‌های مستندات
+      parameters:
+      - description: فایل برای آپلود
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: document
+        description: نوع فایل (profile, document)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: فایل با موفقیت آپلود شد
+          schema:
+            $ref: '#/definitions/internal_handler.UploadResponse'
+        "400":
+          description: درخواست نامعتبر یا فایل خیلی بزرگ است
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: آپلود فایل
+      tags:
+      - آپلود
+  /upload/multiple:
+    post:
+      consumes:
+      - multipart/form-data
+      description: آپلود همزمان چندین فایل
+      parameters:
+      - description: فایل‌ها برای آپلود
+        in: formData
+        name: files
+        required: true
+        type: file
+      - default: document
+        description: نوع فایل (profile, document)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: فایل‌ها با موفقیت آپلود شدند
+          schema:
+            items:
+              $ref: '#/definitions/internal_handler.UploadResponse'
+            type: array
+        "400":
+          description: درخواست نامعتبر
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: عدم اجازه دسترسی
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: خطای سرور
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: آپلود چند فایل
+      tags:
+      - آپلود
 securityDefinitions:
   BearerAuth:
     description: '"توکن JWT - فرمت: Bearer <token>"'
