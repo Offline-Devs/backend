@@ -14,6 +14,13 @@ type PerformanceHandler struct {
 	db *gorm.DB
 }
 
+func performanceStudentParam(c *gin.Context) string {
+	if id := c.Param("id"); id != "" {
+		return id
+	}
+	return c.Param("student_id")
+}
+
 // CreatePerformanceInput داده‌های ورودی برای ایجاد رکورد عملکرد
 type CreatePerformanceInput struct {
 	Date       *time.Time `json:"date" description:"تاریخ میلادی"`
@@ -83,7 +90,7 @@ func (h *PerformanceHandler) GetStudentPerformance(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{id}/performance [post]
 func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
-	studentID := c.Param("id")
+	studentID := performanceStudentParam(c)
 	var input CreatePerformanceInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
@@ -202,7 +209,7 @@ func (h *PerformanceHandler) AdminDeletePerformance(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{id}/performance [get]
 func (h *PerformanceHandler) AdminListStudentPerformance(c *gin.Context) {
-	studentID := c.Param("id")
+	studentID := performanceStudentParam(c)
 
 	var performances []domain.PerformanceHistory
 	if err := h.db.Where("student_id = ?", studentID).Order("date desc").Find(&performances).Error; err != nil {

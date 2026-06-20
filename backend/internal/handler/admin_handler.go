@@ -15,6 +15,13 @@ type AdminHandler struct {
 	db *gorm.DB
 }
 
+func studentParam(c *gin.Context) string {
+	if id := c.Param("id"); id != "" {
+		return id
+	}
+	return c.Param("student_id")
+}
+
 // CreateDynamicFieldInput داده‌های ورودی برای ایجاد فیلد سفارشی
 type CreateDynamicFieldInput struct {
 	EntityType string `json:"entity_type" binding:"required" description:"نوع موجودیت (student, exam, etc)"`
@@ -334,7 +341,7 @@ func (h *AdminHandler) DeleteDynamicField(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{id}/exams [get]
 func (h *AdminHandler) GetStudentExams(c *gin.Context) {
-	studentID := c.Param("id")
+	studentID := studentParam(c)
 
 	var exams []domain.Exam
 	if err := h.db.Where("student_id = ?", studentID).
@@ -360,7 +367,7 @@ func (h *AdminHandler) GetStudentExams(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/students/{id}/mistakes [get]
 func (h *AdminHandler) GetStudentMistakes(c *gin.Context) {
-	studentID := c.Param("id")
+	studentID := studentParam(c)
 
 	var mistakes []domain.Mistake
 	if err := h.db.Where("student_id = ?", studentID).
