@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 FROM alpine:3.19 AS runner
 
 # Create a non-root user for security (containers should not run as root)
-RUN adduser -D -u 10001 appuser
+RUN adduser -D -u 10001 appuser && mkdir -p /uploads && chown appuser:appuser /uploads
 
 WORKDIR /app
 
