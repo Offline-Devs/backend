@@ -17,917 +17,6 @@
     },
     "basePath": "/",
     "paths": {
-        "/admin/dynamic-fields": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "فیلدهای سفارشی را برای یک موجودیت دریافت می‌کند (فقط برای مدیران)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت فیلدهای سفارشی",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "نوع موجودیت (اختیاری)",
-                        "name": "entity_type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "لیست فیلدهای سفارشی",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.DynamicFieldDefinition"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک فیلد سفارشی جدید ایجاد می‌کند (فقط برای مدیران)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "ایجاد فیلد سفارشی",
-                "parameters": [
-                    {
-                        "description": "اطلاعات فیلد سفارشی",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CreateDynamicFieldInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "فیلد با موفقیت ایجاد شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.DynamicFieldDefinition"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/dynamic-fields/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک فیلد سفارشی را بروزرسانی می‌کند (فقط برای مدیران)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "بروزرسانی فیلد سفارشی",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه فیلد",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات جدید فیلد",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CreateDynamicFieldInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "فیلد با موفقیت بروزرسانی شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک فیلد سفارشی را حذف می‌کند (فقط برای مدیران)",
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "حذف فیلد سفارشی",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه فیلد",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "فیلد با موفقیت حذف شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/performance/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند رکورد عملکرد دانشجو را بروزرسانی کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "بروزرسانی رکورد عملکرد (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه رکورد عملکرد",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات جدید",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.UpdatePerformanceInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "رکورد با موفقیت بروزرسانی شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند رکورد عملکرد را حذف کند",
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "حذف رکورد عملکرد (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه رکورد عملکرد",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "رکورد با موفقیت حذف شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "لیست تمام دانشجویان را دریافت می‌کند (فقط برای مدیران)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت لیست دانشجویان",
-                "responses": {
-                    "200": {
-                        "description": "لیست دانشجویان",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/with-stats": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "لیست تمام دانشجویان به همراه آمار خلاصه",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت لیست دانشجویان با آمار (مدیر)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "شماره صفحه",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "تعداد نتایج در هر صفحه",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "all",
-                        "description": "فیلتر وضعیت تایید (true, false, all)",
-                        "name": "approved",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "لیست دانشجویان",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ListResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "جزئیات یک دانشجو را دریافت می‌کند (فقط برای مدیران)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت جزئیات دانشجو",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "جزئیات دانشجو",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "اطلاعات یک دانشجو را بروزرسانی می‌کند (فقط برای مدیران)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "بروزرسانی اطلاعات دانشجو",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات جدید دانشجو",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.UpdateStudentInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "دانشجو با موفقیت بروزرسانی شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک دانشجو و تمام اطلاعات مرتبط آن را حذف می‌کند (فقط برای مدیران)",
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "حذف دانشجو",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "دانشجو با موفقیت حذف شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{id}/approve": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک دانشجو را تایید می‌کند (فقط برای مدیران)",
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "تایید دانشجو",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "دانشجو با موفقیت تایید شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{student_id}/exams": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند تمام آزمون‌های یک دانشجو را مشاهده کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت آزمون‌های یک دانشجو (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "لیست آزمون‌ها",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{student_id}/mistakes": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند تمام اشتباهات ثبت‌شده یک دانشجو را مشاهده کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت اشتباهات یک دانشجو (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "لیست اشتباهات",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{student_id}/performance": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند تمام رکوردهای عملکرد یک دانشجو را مشاهده کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت تاریخچه عملکرد یک دانشجو (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "لیست رکوردهای عملکرد",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند برنامه مطالعاتی، یادداشت و فایل برای دانشجو اضافه کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "ایجاد رکورد عملکرد برای دانشجو (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات رکورد عملکرد",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CreatePerformanceInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "رکورد با موفقیت ایجاد شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/students/{student_id}/statistics": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "مدیر می‌تواند آمار کامل یک دانشجو را مشاهده کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "مدیریت"
-                ],
-                "summary": "دریافت آمار عملکرد یک دانشجو (مدیر)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه دانشجو",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "تاریخ شروع (جلالی YYYY/MM/DD)",
-                        "name": "from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "تاریخ پایان (جلالی YYYY/MM/DD)",
-                        "name": "to",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "آمار عملکرد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ExamStatistics"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/refresh": {
             "post": {
                 "description": "با استفاده از توکن تازه‌سازی، توکن دسترسی جدید ایجاد می‌کند",
@@ -1366,283 +455,6 @@
                 }
             }
         },
-        "/exams": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "تمام آزمون‌های دانشجو را دریافت می‌کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آزمون‌ها"
-                ],
-                "summary": "دریافت لیست آزمون‌های دانشجو",
-                "responses": {
-                    "200": {
-                        "description": "لیست آزمون‌ها",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک آزمون جدید برای دانشجو ایجاد می‌کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آزمون‌ها"
-                ],
-                "summary": "ایجاد آزمون جدید",
-                "parameters": [
-                    {
-                        "description": "اطلاعات آزمون",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CreateExamInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "آزمون با موفقیت ایجاد شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/exams/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "جزئیات یک آزمون خاص را دریافت می‌کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آزمون‌ها"
-                ],
-                "summary": "دریافت جزئیات آزمون",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه آزمون",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "جزئیات آزمون",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "آزمون یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک آزمون موجود را بروزرسانی می‌کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آزمون‌ها"
-                ],
-                "summary": "بروزرسانی آزمون",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه آزمون",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات آزمون",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.UpdateExamInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "آزمون با موفقیت بروزرسانی شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "آزمون یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک آزمون را حذف می‌کند",
-                "tags": [
-                    "آزمون‌ها"
-                ],
-                "summary": "حذف آزمون",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه آزمون",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "آزمون با موفقیت حذف شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/health": {
             "get": {
                 "description": "بررسی می‌کند که آیا سرور در حال اجرا است",
@@ -1689,478 +501,6 @@
                 }
             }
         },
-        "/mistakes": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "تمام اشتباهات ثبت‌شده برای دانشجو را دریافت می‌کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "اشتباهات"
-                ],
-                "summary": "دریافت لیست اشتباهات دانشجو",
-                "responses": {
-                    "200": {
-                        "description": "لیست اشتباهات",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک اشتباه جدید برای دانشجو ثبت می‌کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "اشتباهات"
-                ],
-                "summary": "ایجاد اشتباه جدید",
-                "parameters": [
-                    {
-                        "description": "اطلاعات اشتباه",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CreateMistakeInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "اشتباه با موفقیت ایجاد شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/mistakes/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک اشتباه ثبت‌شده را بروزرسانی می‌کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "اشتباهات"
-                ],
-                "summary": "بروزرسانی اشتباه",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه اشتباه",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "اطلاعات اشتباه",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.UpdateMistakeInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "اشتباه با موفقیت بروزرسانی شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "اشتباه یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "یک اشتباه را حذف می‌کند",
-                "tags": [
-                    "اشتباهات"
-                ],
-                "summary": "حذف اشتباه",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "شناسه اشتباه",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "اشتباه با موفقیت حذف شد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/students/dashboard": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "خلاصه‌ای از آمار کلی دانشجو برای نمایش در داشبورد",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آمار"
-                ],
-                "summary": "دریافت خلاصه داشبورد دانشجو",
-                "responses": {
-                    "200": {
-                        "description": "خلاصه داشبورد",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/students/performance": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "تاریخچه عملکرد و برنامه‌های مطالعاتی دانشجو را دریافت می‌کند (فقط خواندنی برای دانشجو)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "عملکرد"
-                ],
-                "summary": "دریافت تاریخچه عملکرد دانشجو",
-                "responses": {
-                    "200": {
-                        "description": "لیست رکوردهای عملکرد",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/students/profile": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "اطلاعات پروفایل دانشجویی را دریافت می‌کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "دانشجویان"
-                ],
-                "summary": "دریافت پروفایل دانشجو",
-                "responses": {
-                    "200": {
-                        "description": "پروفایل دانشجو",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "اطلاعات پروفایل دانشجویی را تکمیل یا به‌روز می‌کند",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "دانشجویان"
-                ],
-                "summary": "تکمیل یا بروزرسانی پروفایل دانشجو",
-                "parameters": [
-                    {
-                        "description": "اطلاعات پروفایل",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.CompleteProfileInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "پروفایل با موفقیت ایجاد/بروزرسانی شد",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/students/statistics": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "آمار کامل عملکرد دانشجو در آزمون‌ها را دریافت می‌کند",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آمار"
-                ],
-                "summary": "دریافت آمار عملکرد دانشجو",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "تاریخ شروع (جلالی YYYY/MM/DD)",
-                        "name": "from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "تاریخ پایان (جلالی YYYY/MM/DD)",
-                        "name": "to",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "آمار عملکرد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ExamStatistics"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "پروفایل دانشجو یافت نشد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/subjects": {
             "get": {
                 "description": "لیست دروس مرتبط با یک رشته تحصیلی را دریافت می‌کند",
@@ -2195,136 +535,50 @@
                     }
                 }
             }
-        },
-        "/upload": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "آپلود تصویر پروفایل یا فایل‌های مستندات",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آپلود"
-                ],
-                "summary": "آپلود فایل",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "فایل برای آپلود",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "document",
-                        "description": "نوع فایل (profile, document)",
-                        "name": "type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "فایل با موفقیت آپلود شد",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.UploadResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر یا فایل خیلی بزرگ است",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/upload/multiple": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "آپلود همزمان چندین فایل",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "آپلود"
-                ],
-                "summary": "آپلود چند فایل",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "فایل‌ها برای آپلود",
-                        "name": "files",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "document",
-                        "description": "نوع فایل (profile, document)",
-                        "name": "type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "فایل‌ها با موفقیت آپلود شدند",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_handler.UploadResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "درخواست نامعتبر",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "عدم اجازه دسترسی",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "خطای سرور",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
+        "github_com_yourusername_noshirvani-academy_backend_internal_domain.AdminNote": {
+            "type": "object",
+            "properties": {
+                "admin_id": {
+                    "type": "string"
+                },
+                "attachment_url": {
+                    "type": "string"
+                },
+                "body": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "jalali_date": {
+                    "type": "string"
+                },
+                "student_profile": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile"
+                },
+                "student_profile_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_yourusername_noshirvani-academy_backend_internal_domain.BlogPost": {
             "type": "object",
             "properties": {
@@ -2357,48 +611,13 @@
                 }
             }
         },
-        "github_com_yourusername_noshirvani-academy_backend_internal_domain.DynamicFieldDefinition": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "entity_type": {
-                    "type": "string"
-                },
-                "field_type": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "is_required": {
-                    "type": "boolean"
-                },
-                "label": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "options": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam": {
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "date": {
                     "type": "string"
                 },
                 "deletedAt": {
@@ -2407,9 +626,6 @@
                 "dynamic_fields": {
                     "type": "object",
                     "additionalProperties": true
-                },
-                "exam_date": {
-                    "type": "string"
                 },
                 "id": {
                     "type": "string"
@@ -2420,16 +636,16 @@
                 "major": {
                     "type": "string"
                 },
-                "student": {
-                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
+                "student_profile": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile"
                 },
-                "student_id": {
+                "student_profile_id": {
                     "type": "string"
                 },
                 "subjects": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
+                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.ExamSubject"
                     }
                 },
                 "title": {
@@ -2443,7 +659,45 @@
                 }
             }
         },
-        "github_com_yourusername_noshirvani-academy_backend_internal_domain.Mistake": {
+        "github_com_yourusername_noshirvani-academy_backend_internal_domain.ExamSubject": {
+            "type": "object",
+            "properties": {
+                "answered": {
+                    "type": "integer"
+                },
+                "blank": {
+                    "type": "integer"
+                },
+                "correct": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "exam_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "percentage": {
+                    "type": "number"
+                },
+                "subject_name": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "wrong": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_yourusername_noshirvani-academy_backend_internal_domain.MistakeAnalysis": {
             "type": "object",
             "properties": {
                 "category": {
@@ -2465,6 +719,12 @@
                 "exam_id": {
                     "type": "string"
                 },
+                "exam_subject": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.ExamSubject"
+                },
+                "exam_subject_id": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2474,16 +734,10 @@
                 "question_number": {
                     "type": "integer"
                 },
-                "student": {
-                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
+                "student_profile": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile"
                 },
-                "student_id": {
-                    "type": "string"
-                },
-                "subject_exam": {
-                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
-                },
-                "subject_exam_id": {
+                "student_profile_id": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -2491,47 +745,15 @@
                 }
             }
         },
-        "github_com_yourusername_noshirvani-academy_backend_internal_domain.PerformanceHistory": {
+        "github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
+                "admin_notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.AdminNote"
+                    }
                 },
-                "date": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "files": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "jalali_date": {
-                    "type": "string"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "student": {
-                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
-                },
-                "student_id": {
-                    "type": "string"
-                },
-                "study_plan": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_yourusername_noshirvani-academy_backend_internal_domain.Student": {
-            "type": "object",
-            "properties": {
                 "approval_date": {
                     "type": "string"
                 },
@@ -2548,6 +770,12 @@
                     "type": "object",
                     "additionalProperties": true
                 },
+                "exams": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Exam"
+                    }
+                },
                 "first_name": {
                     "type": "string"
                 },
@@ -2563,14 +791,41 @@
                 "last_name": {
                     "type": "string"
                 },
+                "last_submitted_at": {
+                    "type": "string"
+                },
                 "major": {
                     "type": "string"
+                },
+                "mistake_analyses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.MistakeAnalysis"
+                    }
                 },
                 "profile_photo": {
                     "type": "string"
                 },
+                "rejection_reason": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "string"
+                },
                 "school": {
                     "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "study_plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudyPlan"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -2583,35 +838,50 @@
                 }
             }
         },
-        "github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam": {
+        "github_com_yourusername_noshirvani-academy_backend_internal_domain.StudyPlan": {
             "type": "object",
             "properties": {
-                "answered": {
-                    "type": "integer"
+                "assigned_by": {
+                    "type": "string"
                 },
-                "blank": {
-                    "type": "integer"
+                "attachments": {
+                    "type": "string"
                 },
-                "correct": {
-                    "type": "integer"
+                "created_at": {
+                    "type": "string"
                 },
-                "exam_id": {
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_date": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "percentage": {
-                    "type": "number"
-                },
-                "subject_name": {
+                "jalali_end_date": {
                     "type": "string"
                 },
-                "total_questions": {
-                    "type": "integer"
+                "jalali_start_date": {
+                    "type": "string"
                 },
-                "wrong": {
-                    "type": "integer"
+                "start_date": {
+                    "type": "string"
+                },
+                "student_profile": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile"
+                },
+                "student_profile_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2633,8 +903,8 @@
                 "role": {
                     "type": "string"
                 },
-                "student": {
-                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
+                "student_profile": {
+                    "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.StudentProfile"
                 },
                 "updated_at": {
                     "type": "string"
@@ -2695,193 +965,11 @@
                 }
             }
         },
-        "internal_handler.CompleteProfileInput": {
-            "type": "object",
-            "properties": {
-                "birth_date": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "dynamic_fields": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "jalali_birth_date": {
-                    "type": "string",
-                    "example": "1400/01/01"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "profile_photo": {
-                    "type": "string"
-                },
-                "school": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.CreateDynamicFieldInput": {
-            "type": "object",
-            "required": [
-                "entity_type",
-                "field_type",
-                "name"
-            ],
-            "properties": {
-                "entity_type": {
-                    "type": "string"
-                },
-                "field_type": {
-                    "type": "string"
-                },
-                "is_required": {
-                    "type": "boolean"
-                },
-                "label": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "options": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.CreateExamInput": {
-            "type": "object",
-            "properties": {
-                "dynamic_fields": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "exam_date": {
-                    "type": "string"
-                },
-                "jalali_date": {
-                    "type": "string",
-                    "example": "1400/01/01"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "subjects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "total_subjects": {
-                    "type": "integer"
-                }
-            }
-        },
-        "internal_handler.CreateMistakeInput": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "dynamic_fields": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "exam_id": {
-                    "type": "string"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "question_number": {
-                    "type": "integer"
-                },
-                "subject_exam_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.CreatePerformanceInput": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "type": "string"
-                },
-                "files": {
-                    "type": "string"
-                },
-                "jalali_date": {
-                    "type": "string",
-                    "example": "1400/01/01"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "study_plan": {
-                    "type": "string"
-                }
-            }
-        },
         "internal_handler.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string"
-                }
-            }
-        },
-        "internal_handler.ExamStatistics": {
-            "type": "object",
-            "properties": {
-                "average_score": {
-                    "type": "number"
-                },
-                "mistakes_by_reason": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "subject_stats": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_handler.SubjectStatistics"
-                    }
-                },
-                "total_exams": {
-                    "type": "integer"
-                },
-                "trend_data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_handler.TrendPoint"
-                    }
-                }
-            }
-        },
-        "internal_handler.ListResponse": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "limit": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
                 }
             }
         },
@@ -2935,29 +1023,6 @@
                 }
             }
         },
-        "internal_handler.SubjectStatistics": {
-            "type": "object",
-            "properties": {
-                "blank": {
-                    "type": "integer"
-                },
-                "correct": {
-                    "type": "integer"
-                },
-                "percentage": {
-                    "type": "number"
-                },
-                "subject_name": {
-                    "type": "string"
-                },
-                "total_questions": {
-                    "type": "integer"
-                },
-                "wrong": {
-                    "type": "integer"
-                }
-            }
-        },
         "internal_handler.TokenResponse": {
             "type": "object",
             "properties": {
@@ -2967,129 +1032,6 @@
                 "expires_in": {
                     "type": "integer",
                     "example": 3600
-                }
-            }
-        },
-        "internal_handler.TrendPoint": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "type": "string"
-                },
-                "exam_count": {
-                    "type": "integer"
-                },
-                "jalali_date": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
-                }
-            }
-        },
-        "internal_handler.UpdateExamInput": {
-            "type": "object",
-            "properties": {
-                "dynamic_fields": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "exam_date": {
-                    "type": "string"
-                },
-                "jalali_date": {
-                    "type": "string",
-                    "example": "1400/01/01"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "subjects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "total_subjects": {
-                    "type": "integer"
-                }
-            }
-        },
-        "internal_handler.UpdateMistakeInput": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "dynamic_fields": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "exam_id": {
-                    "type": "string"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "question_number": {
-                    "type": "integer"
-                },
-                "subject_exam_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.UpdatePerformanceInput": {
-            "type": "object",
-            "properties": {
-                "files": {
-                    "type": "string"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "study_plan": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.UpdateStudentInput": {
-            "type": "object",
-            "properties": {
-                "city": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "is_approved": {
-                    "type": "boolean"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "school": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handler.UploadResponse": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer"
-                },
-                "url": {
-                    "type": "string"
                 }
             }
         },
