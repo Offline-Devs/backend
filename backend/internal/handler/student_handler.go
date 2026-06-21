@@ -15,7 +15,6 @@ type StudentHandler struct {
 	db *gorm.DB
 }
 
-// CompleteProfileInput اطلاعات پروفایل دانشجو
 type CompleteProfileInput struct {
 	FirstName       string                 `json:"first_name" description:"نام کاربر"`
 	LastName        string                 `json:"last_name" description:"نام خانوادگی کاربر"`
@@ -28,141 +27,116 @@ type CompleteProfileInput struct {
 	DynamicFields   map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
 }
 
-// Deprecated: استفاده از CompleteProfileInput کنید
-type studentProfileInput struct {
-	FirstName       string                 `json:"first_name"`
-	LastName        string                 `json:"last_name"`
-	City            string                 `json:"city"`
-	BirthDate       *time.Time             `json:"birth_date"`
-	JalaliBirthDate string                 `json:"jalali_birth_date"`
-	School          string                 `json:"school"`
-	Major           string                 `json:"major"`
-	ProfilePhoto    string                 `json:"profile_photo"`
-	DynamicFields   map[string]interface{} `json:"dynamic_fields"`
-}
+type studentProfileInput = CompleteProfileInput
 
 func NewStudentHandler(db *gorm.DB) *StudentHandler {
 	return &StudentHandler{db: db}
 }
 
-// CompleteProfile godoc
-// @Summary تکمیل یا بروزرسانی پروفایل دانشجو
-// @Description اطلاعات پروفایل دانشجویی را تکمیل یا به‌روز می‌کند
-// @Tags دانشجویان
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param input body CompleteProfileInput true "اطلاعات پروفایل"
-// @Success 200 {object} domain.Student "پروفایل با موفقیت ایجاد/بروزرسانی شد"
-// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /students/profile [post]
 func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 	var input CompleteProfileInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
-	if strings.TrimSpace(input.FirstName) == "" || strings.TrimSpace(input.LastName) == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "first_name and last_name are required"})
+
+	input.FirstName = strings.TrimSpace(input.FirstName)
+	input.LastName = strings.TrimSpace(input.LastName)
+	input.City = strings.TrimSpace(input.City)
+	input.School = strings.TrimSpace(input.School)
+	input.Major = strings.TrimSpace(input.Major)
+	input.ProfilePhoto = strings.TrimSpace(input.ProfilePhoto)
+
+	if input.FirstName == "" || input.LastName == "" || input.City == "" || input.School == "" || input.Major == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "first_name, last_name, city, school, and major are required"})
 		return
 	}
 
-	userID, ok := c.Get("user_id")
+	userIDValue, ok := c.Get("user_id")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
 		return
 	}
-	userIDStr, ok := userID.(string)
-	if !ok || userIDStr == "" {
+	userID, ok := userIDValue.(string)
+	if !ok || userID == "" {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid user id"})
 		return
 	}
 
-	var student domain.Student
-	err := h.db.Where("user_id = ?", userIDStr).First(&student).Error
+	birthDate, jalaliBirthDate, err := normalizeJalaliDateInput(input.BirthDate, input.JalaliBirthDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	now := time.Now().UTC()
+	var profile domain.StudentProfile
+	err = h.db.Where("user_id = ?", userID).First(&profile).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load profile"})
 		return
 	}
 
-	if input.JalaliBirthDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliBirthDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_birth_date format"})
-			return
-		}
-		input.BirthDate = &t
-	} else if input.BirthDate != nil {
-		input.JalaliBirthDate = pkg.GregorianToJalaliString(*input.BirthDate)
-	}
-
 	if err == gorm.ErrRecordNotFound {
-		student = domain.Student{
-			UserID:        userIDStr,
-			FirstName:     strings.TrimSpace(input.FirstName),
-			LastName:      strings.TrimSpace(input.LastName),
-			City:          strings.TrimSpace(input.City),
-			School:        strings.TrimSpace(input.School),
-			Major:         strings.TrimSpace(input.Major),
-			ProfilePhoto:  strings.TrimSpace(input.ProfilePhoto),
-			DynamicFields: input.DynamicFields,
+		profile = domain.StudentProfile{
+			UserID:          userID,
+			FirstName:       input.FirstName,
+			LastName:        input.LastName,
+			City:            input.City,
+			School:          input.School,
+			Major:           input.Major,
+			BirthDate:       birthDate,
+			JalaliBirthDate: jalaliBirthDate,
+			ProfilePhoto:    input.ProfilePhoto,
+			Status:          domain.StudentProfileStatusPending,
+			IsApproved:      false,
+			LastSubmittedAt: &now,
+			DynamicFields:   input.DynamicFields,
 		}
-		if input.BirthDate != nil {
-			student.BirthDate = *input.BirthDate
-		}
-		if input.JalaliBirthDate != "" {
-			student.JalaliBirthDate = input.JalaliBirthDate
-		}
-
-		if err := h.db.Create(&student).Error; err != nil {
+		if err := h.db.Create(&profile).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create profile"})
 			return
 		}
-		c.JSON(http.StatusOK, student)
+		c.JSON(http.StatusOK, profile)
+		return
+	}
+
+	if profile.Status == domain.StudentProfileStatusApproved {
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "approved profiles cannot be edited by students"})
 		return
 	}
 
 	updates := map[string]interface{}{
-		"first_name":     strings.TrimSpace(input.FirstName),
-		"last_name":      strings.TrimSpace(input.LastName),
-		"city":           strings.TrimSpace(input.City),
-		"school":         strings.TrimSpace(input.School),
-		"major":          strings.TrimSpace(input.Major),
-		"profile_photo":  strings.TrimSpace(input.ProfilePhoto),
-		"dynamic_fields": input.DynamicFields,
-	}
-	if input.JalaliBirthDate != "" {
-		updates["jalali_birth_date"] = input.JalaliBirthDate
-	}
-	if input.BirthDate != nil {
-		updates["birth_date"] = *input.BirthDate
+		"first_name":        input.FirstName,
+		"last_name":         input.LastName,
+		"city":              input.City,
+		"school":            input.School,
+		"major":             input.Major,
+		"birth_date":        birthDate,
+		"jalali_birth_date": jalaliBirthDate,
+		"profile_photo":     input.ProfilePhoto,
+		"dynamic_fields":    input.DynamicFields,
+		"status":            domain.StudentProfileStatusPending,
+		"is_approved":       false,
+		"approval_date":     nil,
+		"reviewed_at":       nil,
+		"reviewed_by":       nil,
+		"rejection_reason":  "",
+		"last_submitted_at": &now,
 	}
 
-	if err := h.db.Model(&student).Updates(updates).Error; err != nil {
+	if err := h.db.Model(&profile).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update profile"})
 		return
 	}
-	if err := h.db.Preload("User").First(&student, "id = ?", student.ID).Error; err != nil {
+	if err := h.db.Preload("User").First(&profile, "id = ?", profile.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to reload profile"})
 		return
 	}
 
-	c.JSON(http.StatusOK, student)
+	c.JSON(http.StatusOK, profile)
 }
 
-// GetProfile godoc
-// @Summary دریافت پروفایل دانشجو
-// @Description اطلاعات پروفایل دانشجویی را دریافت می‌کند
-// @Tags دانشجویان
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {object} domain.Student "پروفایل دانشجو"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "پروفایل یافت نشد"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /students/profile [get]
 func (h *StudentHandler) GetProfile(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -170,11 +144,26 @@ func (h *StudentHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	var student domain.Student
-	if err := h.db.Preload("User").Where("user_id = ?", userID).First(&student).Error; err != nil {
+	var profile domain.StudentProfile
+	if err := h.db.Preload("User").Where("user_id = ?", userID).First(&profile).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "profile not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, student)
+	c.JSON(http.StatusOK, profile)
+}
+
+func normalizeJalaliDateInput(gregorian *time.Time, jalali string) (time.Time, string, error) {
+	if strings.TrimSpace(jalali) != "" {
+		t, err := pkg.JalaliToGregorian(jalali)
+		if err != nil {
+			return time.Time{}, "", err
+		}
+		return t.UTC(), strings.TrimSpace(jalali), nil
+	}
+	if gregorian != nil && !gregorian.IsZero() {
+		t := gregorian.UTC()
+		return t, pkg.GregorianToJalaliString(t), nil
+	}
+	return time.Time{}, "", ErrInvalidDateInput
 }

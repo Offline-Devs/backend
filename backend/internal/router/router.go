@@ -2,6 +2,8 @@ package router
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/config"
 	"github.com/yourusername/noshirvani-academy/backend/internal/handler"
@@ -9,7 +11,6 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
 	"github.com/yourusername/noshirvani-academy/backend/internal/middleware"
 	"gorm.io/gorm"
-	"net/http"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -47,9 +48,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			return
 		}
 
-		// Overrides host & basePath dynamically per-request
 		swaggerMap["host"] = c.Request.Host
-
 		prefix := c.GetHeader("X-Forwarded-Prefix")
 		if prefix != "" {
 			swaggerMap["basePath"] = prefix
@@ -60,10 +59,8 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		c.JSON(http.StatusOK, swaggerMap)
 	})
 
-	// 2. Point ginSwagger to the new non-conflicting path
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,
-		// Use a relative path so it automatically includes Nginx's '/api/v1' prefix
 		ginSwagger.URL("../swagger-doc/doc.json"),
 	))
 
@@ -73,7 +70,6 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		blogH := handler.NewBlogHandler(db)
 		subjectsH := handler.NewSubjectsHandler()
 
-		// Public routes
 		api.POST("/auth/request-otp", authH.RequestOTP)
 		api.POST("/auth/verify-otp", authH.VerifyOTP)
 		api.POST("/auth/refresh", authH.RefreshToken)
@@ -126,9 +122,12 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				admin.PUT("/students/:id/approve", adminH.ApproveStudent)
 				admin.DELETE("/students/:id", adminH.DeleteStudent)
 				admin.GET("/students/:id/performance", performanceH.AdminListStudentPerformance)
-				admin.POST("/students/:id/performance", performanceH.AdminCreatePerformance)
-				admin.PUT("/performance/:id", performanceH.AdminUpdatePerformance)
-				admin.DELETE("/performance/:id", performanceH.AdminDeletePerformance)
+				admin.POST("/students/:id/study-plans", performanceH.AdminCreateStudyPlan)
+				admin.PUT("/study-plans/:id", performanceH.AdminUpdateStudyPlan)
+				admin.DELETE("/study-plans/:id", performanceH.AdminDeleteStudyPlan)
+				admin.POST("/students/:id/notes", performanceH.AdminCreateNote)
+				admin.PUT("/notes/:id", performanceH.AdminUpdateNote)
+				admin.DELETE("/notes/:id", performanceH.AdminDeleteNote)
 				admin.GET("/students/:id/statistics", statisticsH.AdminGetStudentStatistics)
 				admin.GET("/dynamic-fields", adminH.GetDynamicFields)
 				admin.POST("/dynamic-fields", adminH.CreateDynamicField)

@@ -2,16 +2,56 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
-	"github.com/yourusername/noshirvani-academy/backend/pkg"
 	"gorm.io/gorm"
 )
 
 type PerformanceHandler struct {
 	db *gorm.DB
+}
+
+type CreateStudyPlanInput struct {
+	Title           string     `json:"title" description:"عنوان برنامه مطالعاتی"`
+	Description     string     `json:"description" description:"توضیحات برنامه مطالعاتی"`
+	StartDate       *time.Time `json:"start_date" description:"تاریخ شروع میلادی"`
+	EndDate         *time.Time `json:"end_date" description:"تاریخ پایان میلادی"`
+	JalaliStartDate string     `json:"jalali_start_date" description:"تاریخ شروع جلالی"`
+	JalaliEndDate   string     `json:"jalali_end_date" description:"تاریخ پایان جلالی"`
+	Attachments     string     `json:"attachments" description:"فایل های پیوست"`
+}
+
+type UpdateStudyPlanInput struct {
+	Title           *string    `json:"title"`
+	Description     *string    `json:"description"`
+	StartDate       *time.Time `json:"start_date"`
+	EndDate         *time.Time `json:"end_date"`
+	JalaliStartDate *string    `json:"jalali_start_date"`
+	JalaliEndDate   *string    `json:"jalali_end_date"`
+	Attachments     *string    `json:"attachments"`
+}
+
+type CreateAdminNoteInput struct {
+	Title         string     `json:"title"`
+	Body          string     `json:"body"`
+	Date          *time.Time `json:"date"`
+	JalaliDate    string     `json:"jalali_date"`
+	AttachmentURL string     `json:"attachment_url"`
+}
+
+type UpdateAdminNoteInput struct {
+	Title         *string    `json:"title"`
+	Body          *string    `json:"body"`
+	Date          *time.Time `json:"date"`
+	JalaliDate    *string    `json:"jalali_date"`
+	AttachmentURL *string    `json:"attachment_url"`
+}
+
+func NewPerformanceHandler(db *gorm.DB) *PerformanceHandler {
+	return &PerformanceHandler{db: db}
 }
 
 func performanceStudentParam(c *gin.Context) string {
@@ -21,201 +61,296 @@ func performanceStudentParam(c *gin.Context) string {
 	return c.Param("student_id")
 }
 
-// CreatePerformanceInput داده‌های ورودی برای ایجاد رکورد عملکرد
-type CreatePerformanceInput struct {
-	Date       *time.Time `json:"date" description:"تاریخ میلادی"`
-	JalaliDate string     `json:"jalali_date" example:"1400/01/01" description:"تاریخ جلالی"`
-	Notes      string     `json:"notes" description:"یادداشت‌ها و توضیحات"`
-	StudyPlan  string     `json:"study_plan" description:"برنامه مطالعاتی"`
-	Files      string     `json:"files" description:"فایل‌های پیوست (JSON array of URLs)"`
-}
-
-// UpdatePerformanceInput داده‌های ورودی برای بروزرسانی رکورد عملکرد
-type UpdatePerformanceInput struct {
-	Notes     *string `json:"notes" description:"یادداشت‌ها و توضیحات"`
-	StudyPlan *string `json:"study_plan" description:"برنامه مطالعاتی"`
-	Files     *string `json:"files" description:"فایل‌های پیوست (JSON array of URLs)"`
-}
-
-func NewPerformanceHandler(db *gorm.DB) *PerformanceHandler {
-	return &PerformanceHandler{db: db}
-}
-
-// GetStudentPerformance godoc
-// @Summary دریافت تاریخچه عملکرد دانشجو
-// @Description تاریخچه عملکرد و برنامه‌های مطالعاتی دانشجو را دریافت می‌کند (فقط خواندنی برای دانشجو)
-// @Tags عملکرد
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {array} domain.PerformanceHistory "لیست رکوردهای عملکرد"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "پروفایل دانشجو یافت نشد"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /students/performance [get]
 func (h *PerformanceHandler) GetStudentPerformance(c *gin.Context) {
-	userID, ok := c.Get("user_id")
+	userID, ok := getAuthenticatedUserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
 		return
 	}
 
-	var student domain.Student
-	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
+	profile, err := loadStudentProfileByUserID(h.db, userID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student profile not found"})
 		return
 	}
 
-	var performances []domain.PerformanceHistory
-	if err := h.db.Where("student_id = ?", student.ID).Order("date desc").Find(&performances).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load performance history"})
+	var studyPlans []domain.StudyPlan
+	var adminNotes []domain.AdminNote
+	if err := h.db.Where("student_id = ?", profile.ID).Order("start_date desc").Find(&studyPlans).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load study plans"})
+		return
+	}
+	if err := h.db.Where("student_id = ?", profile.ID).Order("date desc").Find(&adminNotes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load admin notes"})
 		return
 	}
 
-	c.JSON(http.StatusOK, performances)
+	c.JSON(http.StatusOK, gin.H{
+		"study_plans": studyPlans,
+		"admin_notes": adminNotes,
+	})
 }
 
-// AdminCreatePerformance godoc
-// @Summary ایجاد رکورد عملکرد برای دانشجو (مدیر)
-// @Description مدیر می‌تواند برنامه مطالعاتی، یادداشت و فایل برای دانشجو اضافه کند
-// @Tags مدیریت
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param student_id path string true "شناسه دانشجو"
-// @Param input body CreatePerformanceInput true "اطلاعات رکورد عملکرد"
-// @Success 201 {object} domain.PerformanceHistory "رکورد با موفقیت ایجاد شد"
-// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 404 {object} ErrorResponse "دانشجو یافت نشد"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/performance [post]
-func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
+func (h *PerformanceHandler) AdminCreateStudyPlan(c *gin.Context) {
 	studentID := performanceStudentParam(c)
-	var input CreatePerformanceInput
+	adminID, ok := getAuthenticatedUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
+		return
+	}
+
+	var input CreateStudyPlanInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	if !isSafeAttachmentURL(input.Attachments) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid attachment url"})
+		return
+	}
 
-	// Verify student exists
-	var student domain.Student
+	var student domain.StudentProfile
 	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
 		return
 	}
 
-	recordDate := time.Now()
-	jalaliDate := pkg.GregorianToJalaliString(recordDate)
-
-	if input.JalaliDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
-			return
-		}
-		recordDate = t
-		jalaliDate = input.JalaliDate
-	} else if input.Date != nil {
-		recordDate = *input.Date
-		jalaliDate = pkg.GregorianToJalaliString(recordDate)
+	startDate, jalaliStart, err := parseFlexibleDateInput(input.StartDate, input.JalaliStartDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid start date"})
+		return
 	}
-
-	performance := domain.PerformanceHistory{
-		StudentID:  studentID,
-		Date:       recordDate,
-		JalaliDate: jalaliDate,
-		Notes:      input.Notes,
-		StudyPlan:  input.StudyPlan,
-		Files:      input.Files,
+	endDate, jalaliEnd, err := parseFlexibleDateInput(input.EndDate, input.JalaliEndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid end date"})
+		return
 	}
-
-	if err := h.db.Create(&performance).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create performance record"})
+	if endDate.Before(startDate) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "end date cannot be before start date"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, performance)
+	plan := domain.StudyPlan{
+		StudentProfileID: studentID,
+		AssignedBy:       adminID,
+		Title:            strings.TrimSpace(input.Title),
+		Description:      strings.TrimSpace(input.Description),
+		StartDate:        startDate,
+		EndDate:          endDate,
+		JalaliStartDate:  jalaliStart,
+		JalaliEndDate:    jalaliEnd,
+		Attachments:      strings.TrimSpace(input.Attachments),
+	}
+	if plan.Title == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "title is required"})
+		return
+	}
+
+	if err := h.db.Create(&plan).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create study plan"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, plan)
 }
 
-// AdminUpdatePerformance godoc
-// @Summary بروزرسانی رکورد عملکرد (مدیر)
-// @Description مدیر می‌تواند رکورد عملکرد دانشجو را بروزرسانی کند
-// @Tags مدیریت
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path string true "شناسه رکورد عملکرد"
-// @Param input body UpdatePerformanceInput true "اطلاعات جدید"
-// @Success 200 {object} map[string]string "رکورد با موفقیت بروزرسانی شد"
-// @Failure 400 {object} ErrorResponse "درخواست نامعتبر"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/performance/{id} [put]
-func (h *PerformanceHandler) AdminUpdatePerformance(c *gin.Context) {
+func (h *PerformanceHandler) AdminUpdateStudyPlan(c *gin.Context) {
 	id := c.Param("id")
-	var input UpdatePerformanceInput
+	var input UpdateStudyPlanInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
 
-	updates := map[string]interface{}{}
-	if input.Notes != nil {
-		updates["notes"] = *input.Notes
-	}
-	if input.StudyPlan != nil {
-		updates["study_plan"] = *input.StudyPlan
-	}
-	if input.Files != nil {
-		updates["files"] = *input.Files
-	}
-
-	if err := h.db.Model(&domain.PerformanceHistory{}).Where("id = ?", id).Updates(updates).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update performance record"})
+	var plan domain.StudyPlan
+	if err := h.db.First(&plan, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "study plan not found"})
 		return
 	}
 
+	updates := map[string]interface{}{}
+	if input.Title != nil {
+		updates["title"] = strings.TrimSpace(*input.Title)
+	}
+	if input.Description != nil {
+		updates["description"] = strings.TrimSpace(*input.Description)
+	}
+	if input.Attachments != nil {
+		if !isSafeAttachmentURL(*input.Attachments) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid attachment url"})
+			return
+		}
+		updates["attachments"] = strings.TrimSpace(*input.Attachments)
+	}
+	if input.JalaliStartDate != nil || input.StartDate != nil {
+		jalali := ""
+		if input.JalaliStartDate != nil {
+			jalali = *input.JalaliStartDate
+		}
+		date, normalized, err := parseFlexibleDateInput(input.StartDate, jalali)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid start date"})
+			return
+		}
+		updates["start_date"] = date
+		updates["jalali_start_date"] = normalized
+	}
+	if input.JalaliEndDate != nil || input.EndDate != nil {
+		jalali := ""
+		if input.JalaliEndDate != nil {
+			jalali = *input.JalaliEndDate
+		}
+		date, normalized, err := parseFlexibleDateInput(input.EndDate, jalali)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid end date"})
+			return
+		}
+		updates["end_date"] = date
+		updates["jalali_end_date"] = normalized
+	}
+
+	if err := h.db.Model(&plan).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update study plan"})
+		return
+	}
 	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
 }
 
-// AdminDeletePerformance godoc
-// @Summary حذف رکورد عملکرد (مدیر)
-// @Description مدیر می‌تواند رکورد عملکرد را حذف کند
-// @Tags مدیریت
-// @Security BearerAuth
-// @Param id path string true "شناسه رکورد عملکرد"
-// @Success 200 {object} map[string]string "رکورد با موفقیت حذف شد"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/performance/{id} [delete]
-func (h *PerformanceHandler) AdminDeletePerformance(c *gin.Context) {
+func (h *PerformanceHandler) AdminDeleteStudyPlan(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Delete(&domain.PerformanceHistory{}, "id = ?", id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete performance record"})
+	if err := h.db.Delete(&domain.StudyPlan{}, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete study plan"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
 
-// AdminListStudentPerformance godoc
-// @Summary دریافت تاریخچه عملکرد یک دانشجو (مدیر)
-// @Description مدیر می‌تواند تمام رکوردهای عملکرد یک دانشجو را مشاهده کند
-// @Tags مدیریت
-// @Security BearerAuth
-// @Produce json
-// @Param student_id path string true "شناسه دانشجو"
-// @Success 200 {array} domain.PerformanceHistory "لیست رکوردهای عملکرد"
-// @Failure 401 {object} ErrorResponse "عدم اجازه دسترسی"
-// @Failure 500 {object} ErrorResponse "خطای سرور"
-// @Router /admin/students/{student_id}/performance [get]
 func (h *PerformanceHandler) AdminListStudentPerformance(c *gin.Context) {
 	studentID := performanceStudentParam(c)
 
-	var performances []domain.PerformanceHistory
-	if err := h.db.Where("student_id = ?", studentID).Order("date desc").Find(&performances).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load performance history"})
+	var studyPlans []domain.StudyPlan
+	var adminNotes []domain.AdminNote
+	if err := h.db.Where("student_id = ?", studentID).Order("start_date desc").Find(&studyPlans).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load study plans"})
+		return
+	}
+	if err := h.db.Where("student_id = ?", studentID).Order("date desc").Find(&adminNotes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load admin notes"})
 		return
 	}
 
-	c.JSON(http.StatusOK, performances)
+	c.JSON(http.StatusOK, gin.H{
+		"study_plans": studyPlans,
+		"admin_notes": adminNotes,
+	})
+}
+
+func (h *PerformanceHandler) AdminCreateNote(c *gin.Context) {
+	studentID := performanceStudentParam(c)
+	adminID, ok := getAuthenticatedUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
+		return
+	}
+
+	var input CreateAdminNoteInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+	if !isSafeAttachmentURL(input.AttachmentURL) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid attachment url"})
+		return
+	}
+
+	var student domain.StudentProfile
+	if err := h.db.First(&student, "id = ?", studentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
+		return
+	}
+
+	noteDate, jalaliDate, err := parseFlexibleDateInput(input.Date, input.JalaliDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid note date"})
+		return
+	}
+
+	note := domain.AdminNote{
+		StudentProfileID: studentID,
+		AdminID:          adminID,
+		Title:            strings.TrimSpace(input.Title),
+		Body:             strings.TrimSpace(input.Body),
+		NoteDate:         noteDate,
+		JalaliDate:       jalaliDate,
+		AttachmentURL:    strings.TrimSpace(input.AttachmentURL),
+	}
+	if note.Title == "" || note.Body == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "title and body are required"})
+		return
+	}
+
+	if err := h.db.Create(&note).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create admin note"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, note)
+}
+
+func (h *PerformanceHandler) AdminUpdateNote(c *gin.Context) {
+	id := c.Param("id")
+	var input UpdateAdminNoteInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+
+	var note domain.AdminNote
+	if err := h.db.First(&note, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "admin note not found"})
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if input.Title != nil {
+		updates["title"] = strings.TrimSpace(*input.Title)
+	}
+	if input.Body != nil {
+		updates["body"] = strings.TrimSpace(*input.Body)
+	}
+	if input.AttachmentURL != nil {
+		if !isSafeAttachmentURL(*input.AttachmentURL) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid attachment url"})
+			return
+		}
+		updates["attachment_url"] = strings.TrimSpace(*input.AttachmentURL)
+	}
+	if input.JalaliDate != nil || input.Date != nil {
+		jalali := ""
+		if input.JalaliDate != nil {
+			jalali = *input.JalaliDate
+		}
+		date, normalized, err := parseFlexibleDateInput(input.Date, jalali)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid note date"})
+			return
+		}
+		updates["date"] = date
+		updates["jalali_date"] = normalized
+	}
+
+	if err := h.db.Model(&note).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update admin note"})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
+}
+
+func (h *PerformanceHandler) AdminDeleteNote(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.db.Delete(&domain.AdminNote{}, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete admin note"})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
