@@ -147,6 +147,7 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 
 	// Calculate subject statistics
 	subjectMap := make(map[string]*SubjectStatistics)
+	subjectPenalty := make(map[string]float64)
 	var totalScore float64
 	var examCount int
 
@@ -166,9 +167,10 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 			s.Correct += subject.Correct
 			s.Wrong += subject.Wrong
 			s.Blank += subject.Blank
+			subjectPenalty[subject.SubjectName] += float64(subject.Wrong) * exam.NegativeMark
 
 			if subject.TotalQuestions > 0 {
-				examScore += float64(subject.Correct)
+				examScore += float64(subject.Correct) - float64(subject.Wrong)*exam.NegativeMark
 				examTotal += subject.TotalQuestions
 			}
 		}
@@ -191,7 +193,7 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 	// Calculate percentages for subjects
 	for _, subjectStat := range subjectMap {
 		if subjectStat.TotalQuestions > 0 {
-			subjectStat.Percentage = (float64(subjectStat.Correct) / float64(subjectStat.TotalQuestions)) * 100
+			subjectStat.Percentage = ((float64(subjectStat.Correct) - subjectPenalty[subjectStat.SubjectName]) / float64(subjectStat.TotalQuestions)) * 100
 		}
 		stats.SubjectStats = append(stats.SubjectStats, *subjectStat)
 	}

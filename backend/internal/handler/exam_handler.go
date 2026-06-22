@@ -20,6 +20,7 @@ type CreateExamInput struct {
 	ExamDate      *time.Time             `json:"exam_date" description:"تاریخ و زمان آزمون"`
 	JalaliDate    string                 `json:"jalali_date" example:"1400/01/01" description:"تاریخ جلالی آزمون"`
 	Major         string                 `json:"major" description:"رشته تحصیلی"`
+	NegativeMark  float64                `json:"negative_mark" description:"نمره منفی هر پاسخ غلط"`
 	TotalSubjects int                    `json:"total_subjects" description:"تعداد کل دروس"`
 	DynamicFields map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
 	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
@@ -31,6 +32,7 @@ type UpdateExamInput struct {
 	ExamDate      *time.Time             `json:"exam_date" description:"تاریخ و زمان آزمون"`
 	JalaliDate    *string                `json:"jalali_date" example:"1400/01/01" description:"تاریخ جلالی آزمون"`
 	Major         *string                `json:"major" description:"رشته تحصیلی"`
+	NegativeMark  *float64               `json:"negative_mark" description:"نمره منفی هر پاسخ غلط"`
 	TotalSubjects *int                   `json:"total_subjects" description:"تعداد کل دروس"`
 	DynamicFields map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
 	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
@@ -42,6 +44,7 @@ type createExamInput struct {
 	ExamDate      *time.Time             `json:"exam_date"`
 	JalaliDate    string                 `json:"jalali_date"`
 	Major         string                 `json:"major"`
+	NegativeMark  float64                `json:"negative_mark"`
 	TotalSubjects int                    `json:"total_subjects"`
 	DynamicFields map[string]interface{} `json:"dynamic_fields"`
 	Subjects      []domain.SubjectExam   `json:"subjects"`
@@ -69,6 +72,10 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 	var input CreateExamInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
+		return
+	}
+	if input.NegativeMark < 0 || input.NegativeMark > 1 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "negative_mark must be between 0 and 1"})
 		return
 	}
 
@@ -110,6 +117,7 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		ExamDate:      examDate,
 		JalaliDate:    input.JalaliDate,
 		Major:         input.Major,
+		NegativeMark:  input.NegativeMark,
 		TotalSubjects: input.TotalSubjects,
 		DynamicFields: input.DynamicFields,
 		Subjects:      input.Subjects,
@@ -271,6 +279,13 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 	}
 	if input.Major != nil {
 		updates["major"] = *input.Major
+	}
+	if input.NegativeMark != nil {
+		if *input.NegativeMark < 0 || *input.NegativeMark > 1 {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "negative_mark must be between 0 and 1"})
+			return
+		}
+		updates["negative_mark"] = *input.NegativeMark
 	}
 	if input.TotalSubjects != nil {
 		updates["total_subjects"] = *input.TotalSubjects
