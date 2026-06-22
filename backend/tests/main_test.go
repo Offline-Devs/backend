@@ -63,16 +63,18 @@ func TestMain(m *testing.M) {
 	}
 	testDB = db
 
-	testCfg = &config.Config{
-		DatabaseURL:      dsn,
-		JWTSecret:        "test-access-secret",
-		JWTRefreshSecret: "test-refresh-secret",
-		JWTAccessTTL:     3600,
-		JWTRefreshTTL:    1296000,
-		OTPProvider:      "mock",
-		UploadPath:       os.TempDir() + "/noshirvani_test_uploads",
-		ServerAddr:       ":0",
-		CORSOrigins:      []string{"http://localhost:3000"},
+		testCfg = &config.Config{
+			DatabaseURL:      dsn,
+			JWTSecret:        "test-access-secret",
+			JWTRefreshSecret: "test-refresh-secret",
+			JWTAccessTTL:     3600,
+			JWTRefreshTTL:    1296000,
+			Environment:      "test",
+			OTPProvider:      "mock",
+			ExposeMockOTP:    true,
+			UploadPath:       os.TempDir() + "/noshirvani_test_uploads",
+			ServerAddr:       ":0",
+			CORSOrigins:      []string{"http://localhost:3000"},
 		AdminPhones:      map[string]bool{adminPhone: true},
 		SMSIRAPIKey:      "", // mock SMS (just logs)
 		SMSIRTemplateID:  "",

@@ -86,6 +86,15 @@ func TestUploadFile(t *testing.T) {
 			t.Fatalf("expected 401, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+
+	t.Run("path traversal upload type -> 400", func(t *testing.T) {
+		resp := doUpload(t, "/upload?type=../../tmp/pwn", token, "file", map[string][]byte{
+			"avatar.png": []byte("png"),
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
 
 // POST /upload/multiple
@@ -121,6 +130,15 @@ func TestUploadMultiple(t *testing.T) {
 
 	t.Run("no files -> 400", func(t *testing.T) {
 		resp := doUpload(t, "/upload/multiple", token, "wrongfield", map[string][]byte{
+			"a.png": []byte("x"),
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("invalid upload type -> 400", func(t *testing.T) {
+		resp := doUpload(t, "/upload/multiple?type=../../tmp/pwn", token, "files", map[string][]byte{
 			"a.png": []byte("x"),
 		})
 		if resp.Code != http.StatusBadRequest {

@@ -13,7 +13,9 @@ type Config struct {
 	JWTRefreshSecret string
 	JWTAccessTTL     int64
 	JWTRefreshTTL    int64
+	Environment      string
 	OTPProvider      string
+	ExposeMockOTP    bool
 	UploadPath       string
 	ServerAddr       string
 	CORSOrigins      []string
@@ -35,7 +37,9 @@ func Load() *Config {
 		JWTRefreshSecret: refreshSecret,
 		JWTAccessTTL:     getEnvInt("JWT_ACCESS_TTL", 3600),
 		JWTRefreshTTL:    getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
+		Environment:      getEnv("ENVIRONMENT", "development"),
 		OTPProvider:      getEnv("OTP_PROVIDER", "mock"),
+		ExposeMockOTP:    getEnvBool("EXPOSE_MOCK_OTP", false),
 		UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
 		ServerAddr:       getEnv("SERVER_ADDR", ":8080"),
 		CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
@@ -53,6 +57,12 @@ func Load() *Config {
 	}
 	if cfg.OTPProvider != "mock" && cfg.OTPProvider != "smsir" {
 		log.Fatal("OTP_PROVIDER must be either mock or smsir")
+	}
+	if cfg.Environment == "production" && cfg.OTPProvider == "mock" {
+		log.Fatal("OTP_PROVIDER=mock is not allowed when ENVIRONMENT=production")
+	}
+	if cfg.Environment == "production" && cfg.ExposeMockOTP {
+		log.Fatal("EXPOSE_MOCK_OTP=true is not allowed when ENVIRONMENT=production")
 	}
 	if cfg.OTPProvider == "smsir" && (cfg.SMSIRAPIKey == "" || cfg.SMSIRTemplateID == "") {
 		log.Fatal("SMSIR_API_KEY and SMSIR_TEMPLATE_ID are required when OTP_PROVIDER=smsir")
@@ -75,6 +85,18 @@ func getEnvInt(name string, fallback int64) int64 {
 		return fallback
 	}
 	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func getEnvBool(name string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
 	if err != nil {
 		return fallback
 	}

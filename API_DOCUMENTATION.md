@@ -92,6 +92,8 @@ curl -X POST http://localhost:8080/api/v1/auth/request-otp \
   -d '{"phone": "+989123456789"}'
 ```
 
+در محیط توسعه با `OTP_PROVIDER=mock` و `EXPOSE_MOCK_OTP=true`، کد OTP داخل پاسخ برمی گردد. این رفتار فقط برای توسعه/تست است. در `ENVIRONMENT=production` استفاده از `mock` یا فعال بودن `EXPOSE_MOCK_OTP` مجاز نیست.
+
 ### 2. تأیید OTP
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/verify-otp \

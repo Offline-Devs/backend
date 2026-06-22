@@ -15,6 +15,11 @@ type UploadHandler struct {
 	uploadPath string
 }
 
+var allowedUploadTypes = map[string]string{
+	"document": "document",
+	"profile":  "profile",
+}
+
 // UploadResponse پاسخ آپلود فایل
 type UploadResponse struct {
 	URL      string `json:"url" description:"آدرس دسترسی به فایل"`
@@ -28,6 +33,11 @@ func NewUploadHandler(uploadPath string) *UploadHandler {
 		fmt.Printf("[WARNING] Failed to create upload directory: %v\n", err)
 	}
 	return &UploadHandler{uploadPath: uploadPath}
+}
+
+func normalizeUploadType(fileType string) (string, bool) {
+	normalized, ok := allowedUploadTypes[strings.TrimSpace(strings.ToLower(fileType))]
+	return normalized, ok
 }
 
 // generateUniqueFilename generates a unique filename using timestamp and random string
@@ -62,7 +72,11 @@ func randomString(length int) string {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /upload [post]
 func (h *UploadHandler) UploadFile(c *gin.Context) {
-	fileType := c.DefaultQuery("type", "document")
+	fileType, ok := normalizeUploadType(c.DefaultQuery("type", "document"))
+	if !ok {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid upload type. Allowed: document, profile"})
+		return
+	}
 
 	// Get file from request
 	file, err := c.FormFile("file")
@@ -148,7 +162,11 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /upload/multiple [post]
 func (h *UploadHandler) UploadMultiple(c *gin.Context) {
-	fileType := c.DefaultQuery("type", "document")
+	fileType, ok := normalizeUploadType(c.DefaultQuery("type", "document"))
+	if !ok {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid upload type. Allowed: document, profile"})
+		return
+	}
 
 	form, err := c.MultipartForm()
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
+	"github.com/yourusername/noshirvani-academy/backend/internal/router"
 )
 
 // requestOTP hits /auth/request-otp and returns the mock OTP code.
@@ -36,6 +37,29 @@ func TestRequestOTP(t *testing.T) {
 		resp := do(t, http.MethodPost, "/auth/request-otp", "", map[string]string{})
 		if resp.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("mock otp hidden unless explicitly enabled", func(t *testing.T) {
+		resetDB(t)
+		prev := testCfg.ExposeMockOTP
+		testCfg.ExposeMockOTP = false
+		testRouter = router.Setup(testDB, testCfg)
+		defer func() {
+			testCfg.ExposeMockOTP = prev
+			testRouter = router.Setup(testDB, testCfg)
+		}()
+
+		phone := uniquePhone()
+		clearOTPLimits(t, phone)
+		resp := do(t, http.MethodPost, "/auth/request-otp", "", map[string]string{"phone": phone})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var body map[string]interface{}
+		resp.JSON(t, &body)
+		if _, ok := body["otp"]; ok {
+			t.Fatalf("expected otp omitted when EXPOSE_MOCK_OTP=false, got %s", resp.Body)
 		}
 	})
 }

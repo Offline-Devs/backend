@@ -176,6 +176,11 @@ JWT_REFRESH_SECRET=your_refresh_secret
 JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL=7d
 
+# Environment / OTP
+ENVIRONMENT=development
+OTP_PROVIDER=mock
+EXPOSE_MOCK_OTP=true
+
 # Database Configuration
 DATABASE_URL=postgresql://user:password@localhost:5432/noshirvani
 
@@ -211,8 +216,16 @@ Ensure these are set for production:
 - `JWT_REFRESH_SECRET` - Use a strong, random secret
 - `JWT_ACCESS_TTL` - Adjust token lifetime as needed
 - `JWT_REFRESH_TTL` - Adjust refresh token lifetime
+- `OTP_PROVIDER=smsir` - `mock` is blocked in production
+- `EXPOSE_MOCK_OTP=false` - startup should fail if true in production
 - Database connection with production credentials
 - API keys and external service credentials
+
+### Mock OTP Safety
+
+- `OTP_PROVIDER=mock` is for local/test only
+- OTP codes are returned in API responses only when `EXPOSE_MOCK_OTP=true`
+- `ENVIRONMENT=production` blocks both `OTP_PROVIDER=mock` and `EXPOSE_MOCK_OTP=true`
 
 ### Deploy with Docker Compose
 ```bash

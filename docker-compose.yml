@@ -36,6 +36,7 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/noshirvani?sslmode=disable
       - REDIS_ADDR=redis:6379
+      - ENVIRONMENT=development
       - SMSIR_API_KEY=${SMSIR_API_KEY:-}
       - SMSIR_TEMPLATE_ID=${SMSIR_TEMPLATE_ID:-}
       - JWT_SECRET=super-secret-key-change-in-production
@@ -43,6 +44,7 @@ services:
       - JWT_ACCESS_TTL=3600
       - JWT_REFRESH_TTL=1296000
       - OTP_PROVIDER=${OTP_PROVIDER:-mock}
+      - EXPOSE_MOCK_OTP=${EXPOSE_MOCK_OTP:-true}
       - UPLOAD_PATH=/uploads
       - SERVER_ADDR=:8080
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost,http://127.0.0.1

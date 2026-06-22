@@ -16,6 +16,7 @@ type AuthHandler struct {
 	jwtService  *auth.JWTService
 	otpStore    *sms.OTPStore
 	otpProvider string
+	exposeMockOTP bool
 	adminPhones map[string]bool
 }
 
@@ -71,8 +72,8 @@ type refreshInput struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-func NewAuthHandler(db *gorm.DB, jwtService *auth.JWTService, otpStore *sms.OTPStore, otpProvider string, adminPhones map[string]bool) *AuthHandler {
-	return &AuthHandler{db: db, jwtService: jwtService, otpStore: otpStore, otpProvider: otpProvider, adminPhones: adminPhones}
+func NewAuthHandler(db *gorm.DB, jwtService *auth.JWTService, otpStore *sms.OTPStore, otpProvider string, exposeMockOTP bool, adminPhones map[string]bool) *AuthHandler {
+	return &AuthHandler{db: db, jwtService: jwtService, otpStore: otpStore, otpProvider: otpProvider, exposeMockOTP: exposeMockOTP, adminPhones: adminPhones}
 }
 
 // RequestOTP godoc
@@ -109,7 +110,7 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	}
 
 	resp := OTPResponse{Message: "otp sent"}
-	if h.otpProvider == "mock" {
+	if h.otpProvider == "mock" && h.exposeMockOTP {
 		resp.OTP = otp
 	}
 	c.JSON(http.StatusOK, resp)

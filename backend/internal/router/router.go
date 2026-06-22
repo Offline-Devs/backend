@@ -74,7 +74,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 	api := r.Group("/")
 	{
-		authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider, cfg.AdminPhones)
+		authH := handler.NewAuthHandler(db, jwtService, otpStore, cfg.OTPProvider, cfg.ExposeMockOTP, cfg.AdminPhones)
 		blogH := handler.NewBlogHandler(db)
 		subjectsH := handler.NewSubjectsHandler()
 
