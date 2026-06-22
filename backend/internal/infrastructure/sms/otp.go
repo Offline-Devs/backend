@@ -27,6 +27,7 @@ const (
 
 type OTPStore struct {
 	redisClient *redis.Client
+	provider    string
 	apiKey      string
 	templateID  string
 	httpClient  *http.Client
@@ -60,7 +61,7 @@ func (e *RateLimitError) Error() string {
 }
 
 // NewOTPStore creates a new OTP store with Redis backend and SMS.ir template
-func NewOTPStore(redisAddr, apiKey, templateID string) *OTPStore {
+func NewOTPStore(redisAddr, provider, apiKey, templateID string) *OTPStore {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
 		Password: "", // no password by default
@@ -76,6 +77,7 @@ func NewOTPStore(redisAddr, apiKey, templateID string) *OTPStore {
 
 	return &OTPStore{
 		redisClient: rdb,
+		provider:    provider,
 		apiKey:      apiKey,
 		templateID:  templateID,
 		httpClient:  &http.Client{Timeout: 10 * time.Second},
@@ -170,8 +172,8 @@ func (s *OTPStore) incrementRateLimit(ctx context.Context, phone string) {
 
 // sendSMS sends OTP via SMS.ir Template API or prints to console in mock mode
 func (s *OTPStore) sendSMS(phone, code string) error {
-	// Mock mode: if no API key, just log
-	if s.apiKey == "" {
+	// Mock mode deliberately logs the code instead of contacting the SMS provider.
+	if s.provider == "mock" {
 		fmt.Printf("[MOCK SMS] Sending OTP %s to %s\n", code, phone)
 		return nil
 	}

@@ -51,6 +51,12 @@ func Load() *Config {
 	if cfg.JWTSecret == "" || cfg.JWTRefreshSecret == "" {
 		log.Fatal("JWT_SECRET and JWT_REFRESH_SECRET are required")
 	}
+	if cfg.OTPProvider != "mock" && cfg.OTPProvider != "smsir" {
+		log.Fatal("OTP_PROVIDER must be either mock or smsir")
+	}
+	if cfg.OTPProvider == "smsir" && (cfg.SMSIRAPIKey == "" || cfg.SMSIRTemplateID == "") {
+		log.Fatal("SMSIR_API_KEY and SMSIR_TEMPLATE_ID are required when OTP_PROVIDER=smsir")
+	}
 
 	return cfg
 }
