@@ -199,6 +199,24 @@ func TestRefreshToken(t *testing.T) {
 			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+
+	t.Run("inactive user -> 403", func(t *testing.T) {
+		u := domain.User{Phone: uniquePhone(), Role: "student", IsActive: true}
+		if err := testDB.Create(&u).Error; err != nil {
+			t.Fatalf("seed user: %v", err)
+		}
+		if err := testDB.Exec("UPDATE users SET is_active = false WHERE id = ?", u.ID).Error; err != nil {
+			t.Fatalf("deactivate user: %v", err)
+		}
+		refresh, err := jwtSvc.GenerateRefreshToken(u.ID)
+		if err != nil {
+			t.Fatalf("mint refresh: %v", err)
+		}
+		resp := do(t, http.MethodPost, "/auth/refresh", "", map[string]string{"refresh_token": refresh})
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403 for inactive user, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
 
 // Auth middleware behaviour on a protected route.

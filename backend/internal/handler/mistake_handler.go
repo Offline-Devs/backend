@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
@@ -46,6 +47,42 @@ func NewMistakeHandler(db *gorm.DB) *MistakeHandler {
 	return &MistakeHandler{db: db}
 }
 
+func (h *MistakeHandler) validateReferences(studentID string, examID, subjectExamID *string) error {
+	var validatedExamID *string
+	if examID != nil {
+		trimmed := strings.TrimSpace(*examID)
+		if trimmed == "" {
+			return gorm.ErrRecordNotFound
+		}
+		var exam domain.Exam
+		if err := h.db.Select("id").Where("id = ? AND student_id = ?", trimmed, studentID).First(&exam).Error; err != nil {
+			return err
+		}
+		validatedExamID = &exam.ID
+	}
+
+	if subjectExamID != nil {
+		trimmed := strings.TrimSpace(*subjectExamID)
+		if trimmed == "" {
+			return gorm.ErrRecordNotFound
+		}
+		var subject domain.SubjectExam
+		query := h.db.
+			Table("subject_exams").
+			Select("subject_exams.id, subject_exams.exam_id").
+			Joins("JOIN exams ON exams.id = subject_exams.exam_id").
+			Where("subject_exams.id = ? AND exams.student_id = ?", trimmed, studentID)
+		if err := query.First(&subject).Error; err != nil {
+			return err
+		}
+		if validatedExamID != nil && subject.ExamID != *validatedExamID {
+			return gorm.ErrRecordNotFound
+		}
+	}
+
+	return nil
+}
+
 // Create godoc
 // @Summary ایجاد اشتباه جدید
 // @Description یک اشتباه جدید برای دانشجو ثبت می‌کند
@@ -80,6 +117,10 @@ func (h *MistakeHandler) Create(c *gin.Context) {
 	var student domain.Student
 	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student profile not found"})
+		return
+	}
+	if err := h.validateReferences(student.ID, input.ExamID, input.SubjectExamID); err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "referenced exam or subject not found"})
 		return
 	}
 
@@ -208,6 +249,19 @@ func (h *MistakeHandler) Update(c *gin.Context) {
 	var mistake domain.Mistake
 	if err := h.db.First(&mistake, "id = ? AND student_id = ?", id, student.ID).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "mistake not found"})
+		return
+	}
+
+	examID := mistake.ExamID
+	if input.ExamID != nil {
+		examID = input.ExamID
+	}
+	subjectExamID := mistake.SubjectExamID
+	if input.SubjectExamID != nil {
+		subjectExamID = input.SubjectExamID
+	}
+	if err := h.validateReferences(student.ID, examID, subjectExamID); err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "referenced exam or subject not found"})
 		return
 	}
 

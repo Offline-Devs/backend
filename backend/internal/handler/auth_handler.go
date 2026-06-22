@@ -219,6 +219,10 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "user not found"})
 		return
 	}
+	if !user.IsActive {
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "user is inactive"})
+		return
+	}
 
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {

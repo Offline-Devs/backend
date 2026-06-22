@@ -110,3 +110,65 @@ func TestMistakeWithoutProfile(t *testing.T) {
 		t.Fatalf("expected 404 (no profile), got %d: %s", resp.Code, resp.Body)
 	}
 }
+
+func TestMistakeRejectsForeignReferences(t *testing.T) {
+	resetDB(t)
+	_, studentA, tokenA := createStudent(t)
+	_, studentB, _ := createStudent(t)
+	examB := domain.Exam{StudentID: studentB, Title: "B"}
+	if err := testDB.Create(&examB).Error; err != nil {
+		t.Fatalf("seed exam: %v", err)
+	}
+	subjectB := domain.SubjectExam{ExamID: examB.ID, SubjectName: "Math"}
+	if err := testDB.Create(&subjectB).Error; err != nil {
+		t.Fatalf("seed subject: %v", err)
+	}
+
+	t.Run("create rejects foreign exam_id", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/mistakes", tokenA, map[string]interface{}{
+			"question_number": 1,
+			"exam_id":         examB.ID,
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("create rejects foreign subject_exam_id", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/mistakes", tokenA, map[string]interface{}{
+			"question_number": 1,
+			"subject_exam_id": subjectB.ID,
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	ownedExam := domain.Exam{StudentID: studentA, Title: "A"}
+	if err := testDB.Create(&ownedExam).Error; err != nil {
+		t.Fatalf("seed owned exam: %v", err)
+	}
+	ownedMistake := domain.Mistake{StudentID: studentA, QuestionNumber: 2}
+	if err := testDB.Create(&ownedMistake).Error; err != nil {
+		t.Fatalf("seed mistake: %v", err)
+	}
+
+	t.Run("update rejects foreign exam_id", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/mistakes/"+ownedMistake.ID, tokenA, map[string]interface{}{
+			"exam_id": examB.ID,
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("update rejects mismatched subject for owned exam", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/mistakes/"+ownedMistake.ID, tokenA, map[string]interface{}{
+			"exam_id":         ownedExam.ID,
+			"subject_exam_id": subjectB.ID,
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+}
