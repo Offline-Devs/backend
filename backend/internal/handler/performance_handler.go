@@ -96,6 +96,10 @@ func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	if input.JalaliDate != "" && input.Date != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "date and jalali_date are mutually exclusive"})
+		return
+	}
 
 	// Verify student exists
 	var student domain.Student
@@ -108,13 +112,14 @@ func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
 	jalaliDate := pkg.GregorianToJalaliString(recordDate)
 
 	if input.JalaliDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliDate)
+		canonicalDate, err := pkg.CanonicalJalaliDate(input.JalaliDate)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
 			return
 		}
+		t, _ := pkg.JalaliToGregorian(canonicalDate)
 		recordDate = t
-		jalaliDate = input.JalaliDate
+		jalaliDate = canonicalDate
 	} else if input.Date != nil {
 		recordDate = *input.Date
 		jalaliDate = pkg.GregorianToJalaliString(recordDate)

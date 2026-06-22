@@ -86,15 +86,14 @@ func TestBehavior_MistakeAcceptsForeignExamID(t *testing.T) {
 	}
 }
 
-// ISSUE #4: client-supplied Jalali dates are stored verbatim (not normalised to
-// zero-padded form), which breaks the lexicographic date-range filtering used
-// by the statistics endpoints.
+// ISSUE #4: client-supplied Jalali dates are now canonicalized to zero-padded
+// form so storage and range filtering stay consistent.
 func TestBehavior_RawJalaliDateStored(t *testing.T) {
 	resetDB(t)
 	_, sid, token := createStudent(t)
 
 	resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{
-		"title": "x", "jalali_date": "1403/9/5", // single-digit, not "1403/09/05"
+		"title": "x", "jalali_date": "1403/9/5",
 	})
 	if resp.Code != http.StatusCreated {
 		t.Fatalf("create exam: %d %s", resp.Code, resp.Body)
@@ -104,7 +103,7 @@ func TestBehavior_RawJalaliDateStored(t *testing.T) {
 	if err := testDB.Where("student_id = ?", sid).First(&e).Error; err != nil {
 		t.Fatalf("reload exam: %v", err)
 	}
-	if e.JalaliDate != "1403/9/5" {
-		t.Errorf("expected raw unpadded date stored (current behaviour), got %q", e.JalaliDate)
+	if e.JalaliDate != "1403/09/05" {
+		t.Errorf("expected canonical padded date stored, got %q", e.JalaliDate)
 	}
 }

@@ -199,6 +199,9 @@ func TestAdminPerformance(t *testing.T) {
 		if p.ID == "" {
 			t.Fatalf("expected id, got %s", resp.Body)
 		}
+		if p.JalaliDate != "1403/04/04" {
+			t.Fatalf("expected canonical jalali date, got %q", p.JalaliDate)
+		}
 		perfID = p.ID
 	})
 

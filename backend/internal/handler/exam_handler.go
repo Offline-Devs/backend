@@ -77,6 +77,10 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing user id"})
 		return
 	}
+	if input.JalaliDate != "" && input.ExamDate != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "exam_date and jalali_date are mutually exclusive"})
+		return
+	}
 
 	var student domain.Student
 	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
@@ -86,12 +90,14 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 
 	examDate := time.Now()
 	if input.JalaliDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliDate)
+		canonicalDate, err := pkg.CanonicalJalaliDate(input.JalaliDate)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
 			return
 		}
+		t, _ := pkg.JalaliToGregorian(canonicalDate)
 		examDate = t
+		input.JalaliDate = canonicalDate
 	} else if input.ExamDate != nil {
 		examDate = *input.ExamDate
 		input.JalaliDate = pkg.GregorianToJalaliString(examDate)
@@ -252,6 +258,10 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	if input.JalaliDate != nil && input.ExamDate != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "exam_date and jalali_date are mutually exclusive"})
+		return
+	}
 
 	var student domain.Student
 	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
@@ -279,12 +289,13 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		updates["dynamic_fields"] = input.DynamicFields
 	}
 	if input.JalaliDate != nil {
-		t, err := pkg.JalaliToGregorian(*input.JalaliDate)
+		canonicalDate, err := pkg.CanonicalJalaliDate(*input.JalaliDate)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_date format"})
 			return
 		}
-		updates["jalali_date"] = *input.JalaliDate
+		t, _ := pkg.JalaliToGregorian(canonicalDate)
+		updates["jalali_date"] = canonicalDate
 		updates["exam_date"] = t
 	} else if input.ExamDate != nil {
 		updates["exam_date"] = *input.ExamDate

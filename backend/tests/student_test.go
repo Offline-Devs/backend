@@ -85,6 +85,34 @@ func TestStudentProfile(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects mixed gregorian and jalali birth dates", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/students/profile", token, map[string]interface{}{
+			"first_name":        "Ali",
+			"last_name":         "Rezaei",
+			"birth_date":        "2001-08-06T00:00:00Z",
+			"jalali_birth_date": "1380/05/15",
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("canonicalizes jalali birth date", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/students/profile", token, map[string]interface{}{
+			"first_name":        "Ali",
+			"last_name":         "Rezaei",
+			"jalali_birth_date": "1380/5/15",
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var s domain.Student
+		resp.JSON(t, &s)
+		if s.JalaliBirthDate != "1380/05/15" {
+			t.Fatalf("expected canonical jalali date, got %q", s.JalaliBirthDate)
+		}
+	})
+
 	t.Run("no auth -> 401", func(t *testing.T) {
 		resp := do(t, http.MethodGet, "/students/profile", "", nil)
 		if resp.Code != http.StatusUnauthorized {
@@ -179,6 +207,13 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 		resp.JSON(t, &stats)
 		if stats.TotalExams != 0 {
 			t.Fatalf("expected exam filtered out, got %d", stats.TotalExams)
+		}
+	})
+
+	t.Run("statistics rejects invalid jalali filter", func(t *testing.T) {
+		resp := do(t, http.MethodGet, "/students/statistics?from=invalid", token, nil)
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 

@@ -2,9 +2,11 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
+	"github.com/yourusername/noshirvani-academy/backend/pkg"
 	"gorm.io/gorm"
 )
 
@@ -78,7 +80,7 @@ func (h *StatisticsHandler) GetStudentStatistics(c *gin.Context) {
 
 	stats, err := h.calculateStatistics(student.ID, c.Query("from"), c.Query("to"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to calculate statistics"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -111,7 +113,7 @@ func (h *StatisticsHandler) AdminGetStudentStatistics(c *gin.Context) {
 
 	stats, err := h.calculateStatistics(studentID, c.Query("from"), c.Query("to"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to calculate statistics"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -121,12 +123,20 @@ func (h *StatisticsHandler) AdminGetStudentStatistics(c *gin.Context) {
 func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate string) (*ExamStatistics, error) {
 	query := h.db.Where("student_id = ?", studentID)
 
-	// Apply date filters if provided
+	// Apply Jalali query filters after converting to Gregorian boundaries.
 	if fromDate != "" {
-		query = query.Where("jalali_date >= ?", fromDate)
+		fromTime, err := pkg.JalaliToGregorian(fromDate)
+		if err != nil {
+			return nil, err
+		}
+		query = query.Where("exam_date >= ?", fromTime)
 	}
 	if toDate != "" {
-		query = query.Where("jalali_date <= ?", toDate)
+		toTime, err := pkg.JalaliToGregorian(toDate)
+		if err != nil {
+			return nil, err
+		}
+		query = query.Where("exam_date < ?", toTime.Add(24*time.Hour))
 	}
 
 	var exams []domain.Exam

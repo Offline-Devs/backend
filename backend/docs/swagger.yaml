@@ -1050,11 +1050,11 @@ paths:
         name: student_id
         required: true
         type: string
-      - description: تاریخ شروع (جلالی YYYY/MM/DD)
+      - description: تاریخ شروع (جلالی canonical YYYY/MM/DD)
         in: query
         name: from
         type: string
-      - description: تاریخ پایان (جلالی YYYY/MM/DD)
+      - description: تاریخ پایان (جلالی canonical YYYY/MM/DD)
         in: query
         name: to
         type: string
@@ -1881,11 +1881,11 @@ paths:
     get:
       description: آمار کامل عملکرد دانشجو در آزمون‌ها را دریافت می‌کند
       parameters:
-      - description: تاریخ شروع (جلالی YYYY/MM/DD)
+      - description: تاریخ شروع (جلالی canonical YYYY/MM/DD)
         in: query
         name: from
         type: string
-      - description: تاریخ پایان (جلالی YYYY/MM/DD)
+      - description: تاریخ پایان (جلالی canonical YYYY/MM/DD)
         in: query
         name: to
         type: string

@@ -68,6 +68,10 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "first_name and last_name are required"})
 		return
 	}
+	if input.JalaliBirthDate != "" && input.BirthDate != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "birth_date and jalali_birth_date are mutually exclusive"})
+		return
+	}
 
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -88,12 +92,14 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 	}
 
 	if input.JalaliBirthDate != "" {
-		t, err := pkg.JalaliToGregorian(input.JalaliBirthDate)
+		canonicalDate, err := pkg.CanonicalJalaliDate(input.JalaliBirthDate)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid jalali_birth_date format"})
 			return
 		}
+		t, _ := pkg.JalaliToGregorian(canonicalDate)
 		input.BirthDate = &t
+		input.JalaliBirthDate = canonicalDate
 	} else if input.BirthDate != nil {
 		input.JalaliBirthDate = pkg.GregorianToJalaliString(*input.BirthDate)
 	}

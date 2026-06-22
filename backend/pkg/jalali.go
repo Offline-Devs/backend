@@ -40,3 +40,11 @@ func JalaliToGregorian(jalaliDate string) (time.Time, error) {
 	}
 	return pt.Time(), nil
 }
+
+func CanonicalJalaliDate(jalaliDate string) (string, error) {
+	t, err := JalaliToGregorian(jalaliDate)
+	if err != nil {
+		return "", err
+	}
+	return GregorianToJalaliString(t), nil
+}

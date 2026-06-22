@@ -108,6 +108,32 @@ func TestExamCRUD(t *testing.T) {
 		}
 	})
 
+	t.Run("create rejects mixed gregorian and jalali input", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{
+			"title":       "Ambiguous",
+			"exam_date":   "2026-01-01T00:00:00Z",
+			"jalali_date": "1404/10/11",
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("create canonicalizes jalali date", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{
+			"title":       "Canonical",
+			"jalali_date": "1403/9/5",
+		})
+		if resp.Code != http.StatusCreated {
+			t.Fatalf("expected 201, got %d: %s", resp.Code, resp.Body)
+		}
+		var e domain.Exam
+		resp.JSON(t, &e)
+		if e.JalaliDate != "1403/09/05" {
+			t.Fatalf("expected canonical jalali date, got %q", e.JalaliDate)
+		}
+	})
+
 	t.Run("update missing exam -> 404", func(t *testing.T) {
 		resp := do(t, http.MethodPut, "/exams/00000000-0000-0000-0000-000000000000", token, map[string]interface{}{
 			"title": "x",
