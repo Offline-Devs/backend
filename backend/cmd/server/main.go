@@ -47,7 +47,7 @@ func main() {
 
 	cfg := config.Load()
 
-	db, err := database.NewPostgresDB(cfg.DatabaseURL)
+	db, err := database.NewPostgresDB(cfg.DatabaseURL, cfg.Environment)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

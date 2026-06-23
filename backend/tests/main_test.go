@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 
 	dsn := getenv("TEST_DATABASE_URL", defaultTestDB)
-	db, err := database.NewPostgresDB(dsn)
+	db, err := database.NewPostgresDB(dsn, "test")
 	if err != nil {
 		fmt.Printf("cannot connect to test database (%s): %v\n", dsn, err)
 		os.Exit(1)
@@ -63,18 +63,18 @@ func TestMain(m *testing.M) {
 	}
 	testDB = db
 
-		testCfg = &config.Config{
-			DatabaseURL:      dsn,
-			JWTSecret:        "test-access-secret",
-			JWTRefreshSecret: "test-refresh-secret",
-			JWTAccessTTL:     3600,
-			JWTRefreshTTL:    1296000,
-			Environment:      "test",
-			OTPProvider:      "mock",
-			ExposeMockOTP:    true,
-			UploadPath:       os.TempDir() + "/noshirvani_test_uploads",
-			ServerAddr:       ":0",
-			CORSOrigins:      []string{"http://localhost:3000"},
+	testCfg = &config.Config{
+		DatabaseURL:      dsn,
+		JWTSecret:        "test-access-secret",
+		JWTRefreshSecret: "test-refresh-secret",
+		JWTAccessTTL:     3600,
+		JWTRefreshTTL:    1296000,
+		Environment:      "test",
+		OTPProvider:      "mock",
+		ExposeMockOTP:    true,
+		UploadPath:       os.TempDir() + "/noshirvani_test_uploads",
+		ServerAddr:       ":0",
+		CORSOrigins:      []string{"http://localhost:3000"},
 		AdminPhones:      map[string]bool{adminPhone: true},
 		SMSIRAPIKey:      "", // mock SMS (just logs)
 		SMSIRTemplateID:  "",

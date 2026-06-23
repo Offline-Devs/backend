@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -35,8 +36,8 @@ func Load() *Config {
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
 		JWTSecret:        os.Getenv("JWT_SECRET"),
 		JWTRefreshSecret: refreshSecret,
-		JWTAccessTTL:     getEnvInt("JWT_ACCESS_TTL", 3600),
-		JWTRefreshTTL:    getEnvInt("JWT_REFRESH_TTL", 15*24*3600),
+		JWTAccessTTL:     getEnvDurationSeconds("JWT_ACCESS_TTL", 3600),
+		JWTRefreshTTL:    getEnvDurationSeconds("JWT_REFRESH_TTL", 15*24*3600),
 		Environment:      getEnv("ENVIRONMENT", "development"),
 		OTPProvider:      getEnv("OTP_PROVIDER", "mock"),
 		ExposeMockOTP:    getEnvBool("EXPOSE_MOCK_OTP", false),
@@ -54,6 +55,9 @@ func Load() *Config {
 	}
 	if cfg.JWTSecret == "" || cfg.JWTRefreshSecret == "" {
 		log.Fatal("JWT_SECRET and JWT_REFRESH_SECRET are required")
+	}
+	if cfg.Environment != "development" && len(cfg.CORSOrigins) == 0 {
+		log.Fatal("CORS_ORIGINS is required outside development")
 	}
 	if cfg.OTPProvider != "mock" && cfg.OTPProvider != "smsir" {
 		log.Fatal("OTP_PROVIDER must be either mock or smsir")
@@ -89,6 +93,27 @@ func getEnvInt(name string, fallback int64) int64 {
 		return fallback
 	}
 	return parsed
+}
+
+func getEnvDurationSeconds(name string, fallback int64) int64 {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+	if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return parsed
+	}
+	if strings.HasSuffix(value, "d") {
+		days, err := strconv.ParseInt(strings.TrimSuffix(value, "d"), 10, 64)
+		if err == nil {
+			return int64((time.Duration(days) * 24 * time.Hour) / time.Second)
+		}
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil {
+		return fallback
+	}
+	return int64(parsed / time.Second)
 }
 
 func getEnvBool(name string, fallback bool) bool {

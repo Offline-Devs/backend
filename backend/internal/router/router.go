@@ -24,7 +24,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		r.Static("/uploads", cfg.UploadPath)
 	}
 
-	r.Use(middleware.CORS(cfg.CORSOrigins))
+	r.Use(middleware.CORS(cfg.CORSOrigins, cfg.Environment == "development" || cfg.Environment == "test"))
 	r.Use(middleware.RateLimiter())
 
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTRefreshSecret, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)

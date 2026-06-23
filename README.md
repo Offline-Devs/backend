@@ -189,6 +189,8 @@ PORT=8080
 ENVIRONMENT=development
 ```
 
+`JWT_ACCESS_TTL` and `JWT_REFRESH_TTL` accept seconds or duration strings like `15m`, `24h`, and `7d`.
+
 ### Custom Fonts (Production)
 
 For fully self-hosted fonts without external dependencies:
@@ -214,10 +216,11 @@ Ensure these are set for production:
 - `ENVIRONMENT=production`
 - `JWT_SECRET` - Use a strong, random secret
 - `JWT_REFRESH_SECRET` - Use a strong, random secret
-- `JWT_ACCESS_TTL` - Adjust token lifetime as needed
-- `JWT_REFRESH_TTL` - Adjust refresh token lifetime
+- `JWT_ACCESS_TTL` - Adjust token lifetime as seconds or duration string like `15m`
+- `JWT_REFRESH_TTL` - Adjust refresh token lifetime as seconds or duration string like `7d`
 - `OTP_PROVIDER=smsir` - `mock` is blocked in production
 - `EXPOSE_MOCK_OTP=false` - startup should fail if true in production
+- `CORS_ORIGINS` - required outside development
 - Database connection with production credentials
 - API keys and external service credentials
 
@@ -226,6 +229,12 @@ Ensure these are set for production:
 - `OTP_PROVIDER=mock` is for local/test only
 - OTP codes are returned in API responses only when `EXPOSE_MOCK_OTP=true`
 - `ENVIRONMENT=production` blocks both `OTP_PROVIDER=mock` and `EXPOSE_MOCK_OTP=true`
+
+### Route Prefixes
+
+- Direct backend routes use paths like `/auth/request-otp` and `/students/profile`
+- Nginx proxy exposes same routes under `/api/v1/*`
+- Swagger UI stays at `/swagger/index.html`
 
 ### Deploy with Docker Compose
 ```bash

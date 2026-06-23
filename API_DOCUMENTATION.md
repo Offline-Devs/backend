@@ -16,6 +16,8 @@ http://localhost:8080/swagger/index.html
 http://localhost:8080/swagger/index.html
 ```
 
+نکته: خود سرویس Go مسیرها را بدون prefix ارائه می‌کند، مثل `/auth/request-otp`. در Docker/Nginx همان endpointها از بیرون با prefix `/api/v1/` منتشر می‌شوند، مثل `/api/v1/auth/request-otp`.
+
 ## 📖 بخش‌های API
 
 ### 1. احراز هویت (Authentication)
@@ -187,7 +189,7 @@ docker-compose up backend
 2. **تاریخ‌های دوگانه**: در endpointهایی که هم فیلد میلادی و هم جلالی دارند، این دو فیلد mutually exclusive هستند و باید فقط یکی ارسال شود.
 2. **شماره تلفن**: شماره تلفن باید با `+98` شروع شود
 3. **Slug**: برای مقالات بلاگ، slug به‌صورت خودکار از عنوان ایجاد می‌شود
-4. **محدودیت میزان درخواست**: سرور از Rate Limiting استفاده می‌کند
+4. **محدودیت میزان درخواست**: سرور از Rate Limiting استفاده می‌کند و headerهای `X-RateLimit-*` و `Retry-After` برمی‌گرداند
 
 ## 📞 پشتیبانی
 
