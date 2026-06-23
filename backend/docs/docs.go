@@ -2427,6 +2427,9 @@ const docTemplate = `{
                 "major": {
                     "type": "string"
                 },
+                "negative_mark": {
+                    "type": "number"
+                },
                 "student": {
                     "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.Student"
                 },
@@ -2781,6 +2784,9 @@ const docTemplate = `{
                 "major": {
                     "type": "string"
                 },
+                "negative_mark": {
+                    "type": "number"
+                },
                 "subjects": {
                     "type": "array",
                     "items": {
@@ -3010,6 +3016,9 @@ const docTemplate = `{
                 },
                 "major": {
                     "type": "string"
+                },
+                "negative_mark": {
+                    "type": "number"
                 },
                 "subjects": {
                     "type": "array",
