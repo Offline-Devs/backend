@@ -307,26 +307,30 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		updates["jalali_date"] = pkg.GregorianToJalaliString(*input.ExamDate)
 	}
 
-	if err := h.db.Model(&exam).Updates(updates).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam"})
-		return
-	}
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&exam).Updates(updates).Error; err != nil {
+			return err
+		}
 
-	if input.Subjects != nil {
-		if err := h.db.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam subjects"})
-			return
-		}
-		for i := range input.Subjects {
-			input.Subjects[i].ID = ""
-			input.Subjects[i].ExamID = exam.ID
-		}
-		if len(input.Subjects) > 0 {
-			if err := h.db.Create(&input.Subjects).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam subjects"})
-				return
+		if input.Subjects != nil {
+			if err := tx.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
+				return err
+			}
+			for i := range input.Subjects {
+				input.Subjects[i].ID = ""
+				input.Subjects[i].ExamID = exam.ID
+			}
+			if len(input.Subjects) > 0 {
+				if err := tx.Create(&input.Subjects).Error; err != nil {
+					return err
+				}
 			}
 		}
+
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update exam"})
+		return
 	}
 
 	if err := h.db.Preload("Subjects").First(&exam, "id = ?", exam.ID).Error; err != nil {

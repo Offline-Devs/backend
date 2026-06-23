@@ -1,10 +1,12 @@
 package tests
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
+	"gorm.io/gorm"
 )
 
 // createExam is a helper that POSTs an exam and returns its id.
@@ -194,4 +196,46 @@ func TestExamCrossStudentIsolation(t *testing.T) {
 			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+}
+
+func TestExamUpdateRollbackOnSubjectFailure(t *testing.T) {
+	resetDB(t)
+	_, _, token := createStudent(t)
+	examID := createExam(t, token, "Rollback")
+
+	callbackName := "tests:fail_subject_exam_create"
+	err := testDB.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
+		if tx.Statement != nil && tx.Statement.Schema != nil && tx.Statement.Schema.Table == "subject_exams" {
+			tx.AddError(errors.New("forced subject create failure"))
+		}
+	})
+	if err != nil {
+		t.Fatalf("register callback: %v", err)
+	}
+	defer func() {
+		_ = testDB.Callback().Create().Remove(callbackName)
+	}()
+
+	resp := do(t, http.MethodPut, "/exams/"+examID, token, map[string]interface{}{
+		"title": "Should Roll Back",
+		"subjects": []map[string]interface{}{
+			{"subject_name": "فیزیک", "total_questions": 20, "correct": 15, "wrong": 5},
+		},
+	})
+	if resp.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d: %s", resp.Code, resp.Body)
+	}
+
+	get := do(t, http.MethodGet, "/exams/"+examID, token, nil)
+	if get.Code != http.StatusOK {
+		t.Fatalf("expected 200 on reload, got %d: %s", get.Code, get.Body)
+	}
+	var exam domain.Exam
+	get.JSON(t, &exam)
+	if exam.Title != "Rollback" {
+		t.Fatalf("expected title rollback, got %q", exam.Title)
+	}
+	if len(exam.Subjects) != 1 || exam.Subjects[0].SubjectName != "ریاضی" {
+		t.Fatalf("expected original subjects preserved, got %+v", exam.Subjects)
+	}
 }
