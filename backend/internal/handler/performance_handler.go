@@ -175,8 +175,13 @@ func (h *PerformanceHandler) AdminUpdatePerformance(c *gin.Context) {
 		updates["files"] = *input.Files
 	}
 
-	if err := h.db.Model(&domain.PerformanceHistory{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	result := h.db.Model(&domain.PerformanceHistory{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update performance record"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "performance record not found"})
 		return
 	}
 
@@ -195,8 +200,13 @@ func (h *PerformanceHandler) AdminUpdatePerformance(c *gin.Context) {
 // @Router /admin/performance/{id} [delete]
 func (h *PerformanceHandler) AdminDeletePerformance(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Delete(&domain.PerformanceHistory{}, "id = ?", id).Error; err != nil {
+	result := h.db.Delete(&domain.PerformanceHistory{}, "id = ?", id)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete performance record"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "performance record not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})

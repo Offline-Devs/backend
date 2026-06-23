@@ -106,8 +106,13 @@ func (h *BlogHandler) Update(c *gin.Context) {
 		"published": input.Published,
 	}
 
-	if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	result := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update post"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
@@ -125,8 +130,13 @@ func (h *BlogHandler) Update(c *gin.Context) {
 // @Router /blog/{id}/publish [put]
 func (h *BlogHandler) Publish(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Update("published", true).Error; err != nil {
+	result := h.db.Model(&domain.BlogPost{}).Where("id = ?", id).Update("published", true)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to publish post"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "published"})
@@ -144,8 +154,13 @@ func (h *BlogHandler) Publish(c *gin.Context) {
 // @Router /blog/{id} [delete]
 func (h *BlogHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Delete(&domain.BlogPost{}, "id = ?", id).Error; err != nil {
+	result := h.db.Delete(&domain.BlogPost{}, "id = ?", id)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete post"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})

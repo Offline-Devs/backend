@@ -160,8 +160,13 @@ func (h *AdminHandler) UpdateStudent(c *gin.Context) {
 		return
 	}
 
-	if err := h.db.Model(&domain.Student{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	result := h.db.Model(&domain.Student{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update student"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
@@ -179,8 +184,13 @@ func (h *AdminHandler) UpdateStudent(c *gin.Context) {
 // @Router /admin/students/{id} [delete]
 func (h *AdminHandler) DeleteStudent(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Delete(&domain.Student{}, "id = ?", id).Error; err != nil {
+	result := h.db.Delete(&domain.Student{}, "id = ?", id)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete student"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
@@ -199,11 +209,16 @@ func (h *AdminHandler) DeleteStudent(c *gin.Context) {
 func (h *AdminHandler) ApproveStudent(c *gin.Context) {
 	id := c.Param("id")
 	now := time.Now()
-	if err := h.db.Model(&domain.Student{}).Where("id = ?", id).Updates(map[string]interface{}{
+	result := h.db.Model(&domain.Student{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"is_approved":   true,
 		"approval_date": &now,
-	}).Error; err != nil {
+	})
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to approve student"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "approved"})
@@ -303,8 +318,13 @@ func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 		"is_required": input.IsRequired,
 	}
 
-	if err := h.db.Model(&domain.DynamicFieldDefinition{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	result := h.db.Model(&domain.DynamicFieldDefinition{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update field"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "field not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "updated"})
@@ -322,8 +342,13 @@ func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 // @Router /admin/dynamic-fields/{id} [delete]
 func (h *AdminHandler) DeleteDynamicField(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.db.Delete(&domain.DynamicFieldDefinition{}, "id = ?", id).Error; err != nil {
+	result := h.db.Delete(&domain.DynamicFieldDefinition{}, "id = ?", id)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete field"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "field not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})

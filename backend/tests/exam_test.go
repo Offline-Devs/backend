@@ -154,6 +154,13 @@ func TestExamCRUD(t *testing.T) {
 			t.Fatalf("expected 404 after delete, got %d", get.Code)
 		}
 	})
+
+	t.Run("delete missing exam -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/exams/00000000-0000-0000-0000-000000000000", token, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
 
 // CreateExam without a student profile must 404.

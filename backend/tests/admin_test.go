@@ -157,6 +157,15 @@ func TestAdminStudentManagement(t *testing.T) {
 		}
 	})
 
+	t.Run("update missing student -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/students/00000000-0000-0000-0000-000000000000", adminToken, map[string]interface{}{
+			"city": "x",
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("approve student", func(t *testing.T) {
 		resp := do(t, http.MethodPut, "/admin/students/"+studentID+"/approve", adminToken, nil)
 		if resp.Code != http.StatusOK {
@@ -169,10 +178,24 @@ func TestAdminStudentManagement(t *testing.T) {
 		}
 	})
 
+	t.Run("approve missing student -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/students/00000000-0000-0000-0000-000000000000/approve", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("delete student", func(t *testing.T) {
 		resp := do(t, http.MethodDelete, "/admin/students/"+studentID, adminToken, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("delete missing student -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/admin/students/00000000-0000-0000-0000-000000000000", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }
@@ -235,10 +258,26 @@ func TestAdminPerformance(t *testing.T) {
 		}
 	})
 
+	t.Run("update missing performance -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/performance/00000000-0000-0000-0000-000000000000", adminToken, map[string]interface{}{
+			"notes": "x",
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("delete performance", func(t *testing.T) {
 		resp := do(t, http.MethodDelete, "/admin/performance/"+perfID, adminToken, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("delete missing performance -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/admin/performance/00000000-0000-0000-0000-000000000000", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }
@@ -297,10 +336,28 @@ func TestAdminDynamicFields(t *testing.T) {
 		}
 	})
 
+	t.Run("update missing field -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/dynamic-fields/00000000-0000-0000-0000-000000000000", adminToken, map[string]interface{}{
+			"entity_type": "student",
+			"name":        "guardian_phone",
+			"field_type":  "text",
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("delete", func(t *testing.T) {
 		resp := do(t, http.MethodDelete, "/admin/dynamic-fields/"+fieldID, adminToken, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("delete missing field -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/admin/dynamic-fields/00000000-0000-0000-0000-000000000000", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }
@@ -360,6 +417,15 @@ func TestAdminBlog(t *testing.T) {
 		}
 	})
 
+	t.Run("update missing post -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/blog/00000000-0000-0000-0000-000000000000", adminToken, map[string]interface{}{
+			"title": "x",
+		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("publish then visible publicly", func(t *testing.T) {
 		resp := do(t, http.MethodPut, "/admin/blog/"+postID+"/publish", adminToken, nil)
 		if resp.Code != http.StatusOK {
@@ -373,10 +439,24 @@ func TestAdminBlog(t *testing.T) {
 		}
 	})
 
+	t.Run("publish missing post -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/admin/blog/00000000-0000-0000-0000-000000000000/publish", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("delete", func(t *testing.T) {
 		resp := do(t, http.MethodDelete, "/admin/blog/"+postID, adminToken, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("delete missing post -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/admin/blog/00000000-0000-0000-0000-000000000000", adminToken, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }

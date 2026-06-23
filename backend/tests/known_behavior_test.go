@@ -13,43 +13,7 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
 )
 
-// ISSUE #1: mutating/deleting a non-existent resource returns 200 success
-// instead of 404, because handlers issue UPDATE/DELETE without checking that a
-// row actually matched.
-func TestBehavior_MissingResourceReturnsSuccess(t *testing.T) {
-	resetDB(t)
-	_, adminToken := createAdmin(t)
-	missing := "00000000-0000-0000-0000-000000000000"
-
-	cases := []struct {
-		method, path string
-	}{
-		{http.MethodPut, "/admin/students/" + missing},
-		{http.MethodPut, "/admin/students/" + missing + "/approve"},
-		{http.MethodDelete, "/admin/students/" + missing},
-		{http.MethodDelete, "/admin/blog/" + missing},
-		{http.MethodPut, "/admin/blog/" + missing},
-		{http.MethodPut, "/admin/performance/" + missing},
-		{http.MethodDelete, "/admin/performance/" + missing},
-		{http.MethodDelete, "/admin/dynamic-fields/" + missing},
-	}
-	for _, tc := range cases {
-		resp := do(t, tc.method, tc.path, adminToken, map[string]interface{}{"city": "x", "notes": "x", "title": "x"})
-		if resp.Code != http.StatusOK {
-			t.Errorf("%s %s: expected current behaviour 200, got %d (issue may be fixed)", tc.method, tc.path, resp.Code)
-		}
-	}
-
-	// DELETE /exams/{missing} also returns 200 — but only once the caller has a
-	// student profile (the handler checks the profile first, then deletes 0 rows).
-	_, _, studentToken := createStudent(t)
-	resp := do(t, http.MethodDelete, "/exams/"+missing, studentToken, nil)
-	if resp.Code != http.StatusOK {
-		t.Errorf("DELETE /exams/missing with profile: expected current behaviour 200, got %d", resp.Code)
-	}
-}
-
-// ISSUE #2: client-supplied Jalali dates are now canonicalized to zero-padded
+// ISSUE #1: client-supplied Jalali dates are now canonicalized to zero-padded
 // form so storage and range filtering stay consistent.
 func TestBehavior_RawJalaliDateStored(t *testing.T) {
 	resetDB(t)
