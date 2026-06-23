@@ -13,9 +13,10 @@ import (
 func createExam(t *testing.T, token, title string) string {
 	t.Helper()
 	resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{
-		"title":       title,
-		"jalali_date": "1403/03/03",
-		"major":       "ریاضی",
+		"title":         title,
+		"jalali_date":   "1403/03/03",
+		"major":         "ریاضی",
+		"negative_mark": 0.25,
 		"subjects": []map[string]interface{}{
 			{"subject_name": "ریاضی", "total_questions": 10, "correct": 7, "wrong": 3},
 		},
@@ -52,6 +53,9 @@ func TestExamCRUD(t *testing.T) {
 		if len(e.Subjects) != 1 || e.Subjects[0].Correct != 7 {
 			t.Fatalf("subjects not persisted: %+v", e.Subjects)
 		}
+		if e.NegativeMark != 0.25 {
+			t.Fatalf("negative mark not persisted: %v", e.NegativeMark)
+		}
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -83,7 +87,8 @@ func TestExamCRUD(t *testing.T) {
 
 	t.Run("update title and subjects", func(t *testing.T) {
 		resp := do(t, http.MethodPut, "/exams/"+examID, token, map[string]interface{}{
-			"title": "Updated",
+			"title":         "Updated",
+			"negative_mark": 0.33,
 			"subjects": []map[string]interface{}{
 				{"subject_name": "فیزیک", "total_questions": 20, "correct": 15, "wrong": 5},
 			},
@@ -95,6 +100,9 @@ func TestExamCRUD(t *testing.T) {
 		resp.JSON(t, &e)
 		if e.Title != "Updated" {
 			t.Fatalf("title not updated: %+v", e)
+		}
+		if e.NegativeMark != 0.33 {
+			t.Fatalf("negative mark not updated: %v", e.NegativeMark)
 		}
 		if len(e.Subjects) != 1 || e.Subjects[0].SubjectName != "فیزیک" {
 			t.Fatalf("subjects not replaced: %+v", e.Subjects)
@@ -133,6 +141,15 @@ func TestExamCRUD(t *testing.T) {
 		resp.JSON(t, &e)
 		if e.JalaliDate != "1403/09/05" {
 			t.Fatalf("expected canonical jalali date, got %q", e.JalaliDate)
+		}
+	})
+
+	t.Run("update invalid negative mark -> 400", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/exams/"+examID, token, map[string]interface{}{
+			"negative_mark": 1.1,
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
