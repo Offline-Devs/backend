@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -43,18 +45,13 @@ func normalizeUploadType(fileType string) (string, bool) {
 // generateUniqueFilename generates a unique filename using timestamp and random string
 func generateUniqueFilename(originalName string) string {
 	ext := filepath.Ext(originalName)
-	timestamp := time.Now().UnixNano()
-	return fmt.Sprintf("%d_%s%s", timestamp, randomString(8), ext)
-}
-
-// randomString generates a random alphanumeric string
-func randomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[time.Now().UnixNano()%int64(len(charset))]
+	// Use cryptographically secure random bytes to prevent predictability
+	randBytes := make([]byte, 12)
+	if _, err := rand.Read(randBytes); err != nil {
+		// fallback to timestamp-based name if crypto fails (very unlikely)
+		return fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), time.Now().Unix(), ext)
 	}
-	return string(b)
+	return fmt.Sprintf("%s%s", hex.EncodeToString(randBytes), ext)
 }
 
 // UploadFile godoc

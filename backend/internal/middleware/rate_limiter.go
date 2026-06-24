@@ -1,78 +1,128 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
-
-type visitor struct {
-    remaining int
-    resetAt   time.Time
-}
 
 const (
-    rateLimitWindow = time.Minute
-    rateLimitMax    = 60
+	rateLimitWindow = time.Minute
+	rateLimitMax    = 60
 )
 
-var (
-	visitors   = map[string]*visitor{}
-	visitorsMu sync.Mutex
-	lastCleanup time.Time
-)
-
-func cleanupExpiredVisitors(now time.Time) {
-	for ip, v := range visitors {
-        if now.After(v.resetAt) {
-			delete(visitors, ip)
+// RateLimiter returns a Redis-backed rate limiter middleware. If redisAddr is
+// empty or Redis is unreachable, it falls back to a best-effort in-memory
+// limiter for single-instance use.
+func RateLimiter(redisAddr string) gin.HandlerFunc {
+	var rdb *redis.Client
+	var useRedis bool
+	if redisAddr != "" {
+		rdb = redis.NewClient(&redis.Options{Addr: redisAddr})
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := rdb.Ping(ctx).Err(); err == nil {
+			useRedis = true
 		}
 	}
-	lastCleanup = now
-}
 
-func RateLimiter() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        ip := c.ClientIP()
-        now := time.Now()
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		key := fmt.Sprintf("rate:%s", ip)
 
-		visitorsMu.Lock()
-		if lastCleanup.IsZero() || now.Sub(lastCleanup) >= rateLimitWindow {
-			cleanupExpiredVisitors(now)
+		if useRedis {
+			ctx := context.Background()
+			cnt, err := rdb.Incr(ctx, key).Result()
+			if err != nil {
+				// Redis error: do not block request, but do not award headers
+				c.Next()
+				return
+			}
+			if cnt == 1 {
+				rdb.Expire(ctx, key, rateLimitWindow)
+			}
+
+			remaining := rateLimitMax - int(cnt)
+			ttl, _ := rdb.TTL(ctx, key).Result()
+			resetAt := time.Now().Add(ttl)
+
+			if remaining < 0 {
+				retryAfter := int(time.Until(resetAt).Seconds())
+				if retryAfter < 0 {
+					retryAfter = 0
+				}
+				c.Header("Retry-After", strconv.Itoa(retryAfter))
+				c.Header("X-RateLimit-Limit", strconv.Itoa(rateLimitMax))
+				c.Header("X-RateLimit-Remaining", "0")
+				c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", resetAt.Unix()))
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+				return
+			}
+
+			c.Header("X-RateLimit-Limit", strconv.Itoa(rateLimitMax))
+			c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+			c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", resetAt.Unix()))
+			c.Next()
+			return
 		}
 
-        v, ok := visitors[ip]
-		if !ok || now.After(v.resetAt) {
-			v = &visitor{remaining: rateLimitMax, resetAt: now.Add(rateLimitWindow)}
+		// Fallback: best-effort single-instance in-memory limiter
+		// Keep behavior minimal to avoid panics if Redis not configured
+		now := time.Now()
+		// Simple in-memory key with timestamp-based window
+		// Use Gin context to store per-process map
+		visitorsAny, _ := c.Get("__visitors_map")
+		var visitors map[string]struct {
+			Count   int
+			ResetAt time.Time
+		}
+		if visitorsAny == nil {
+			visitors = map[string]struct {
+				Count   int
+				ResetAt time.Time
+			}{}
+			c.Set("__visitors_map", visitors)
+		} else {
+			visitors = visitorsAny.(map[string]struct {
+				Count   int
+				ResetAt time.Time
+			})
+		}
+
+		v, ok := visitors[ip]
+		if !ok || now.After(v.ResetAt) {
+			v = struct {
+				Count   int
+				ResetAt time.Time
+			}{Count: 1, ResetAt: now.Add(rateLimitWindow)}
+			visitors[ip] = v
+		} else {
+			v.Count++
 			visitors[ip] = v
 		}
-		resetAt := v.resetAt
 
-		if v.remaining <= 0 {
-			visitorsMu.Unlock()
-			retryAfter := int(time.Until(resetAt).Seconds())
+		remaining := rateLimitMax - v.Count
+		if remaining < 0 {
+			retryAfter := int(time.Until(v.ResetAt).Seconds())
 			if retryAfter < 0 {
 				retryAfter = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(retryAfter))
 			c.Header("X-RateLimit-Limit", strconv.Itoa(rateLimitMax))
 			c.Header("X-RateLimit-Remaining", "0")
-			c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", resetAt.Unix()))
+			c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", v.ResetAt.Unix()))
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
 			return
 		}
-		v.remaining--
-		remaining := v.remaining
-		visitorsMu.Unlock()
 
 		c.Header("X-RateLimit-Limit", strconv.Itoa(rateLimitMax))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
-		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", resetAt.Unix()))
-
+		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", v.ResetAt.Unix()))
 		c.Next()
 	}
 }

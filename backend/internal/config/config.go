@@ -26,6 +26,7 @@ type Config struct {
 	SMSIRAPIKey      string
 	SMSIRTemplateID  string
 	RedisAddr        string
+	TrustedProxies   []string
 }
 
 func Load() *Config {
@@ -45,11 +46,12 @@ func Load() *Config {
 		ExposeMockOTP:    getEnvBool("EXPOSE_MOCK_OTP", false),
 		UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
 		ServerAddr:       getEnv("SERVER_ADDR", ":8080"),
-		CORSOrigins:      splitCSV(os.Getenv("CORS_ORIGINS")),
+		CORSOrigins:      normalizeOrigins(os.Getenv("CORS_ORIGINS")),
 		AdminPhones:      phoneSet(os.Getenv("ADMIN_PHONES")),
 		SMSIRAPIKey:      os.Getenv("SMSIR_API_KEY"),
 		SMSIRTemplateID:  os.Getenv("SMSIR_TEMPLATE_ID"),
 		RedisAddr:        getEnv("REDIS_ADDR", "localhost:6379"),
+		TrustedProxies:   splitCSV(os.Getenv("TRUSTED_PROXIES")),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -140,6 +142,22 @@ func splitCSV(value string) []string {
 		}
 	}
 	return output
+}
+
+// normalizeOrigins trims, lower-cases and removes trailing slashes from a
+// comma-separated origin list. It filters out empty entries.
+func normalizeOrigins(value string) []string {
+	parts := splitCSV(value)
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		p = strings.ToLower(strings.TrimRight(p, "/"))
+		out = append(out, p)
+	}
+	return out
 }
 
 func phoneSet(value string) map[string]bool {

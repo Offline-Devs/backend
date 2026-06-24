@@ -2,6 +2,8 @@ package router
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/config"
 	"github.com/yourusername/noshirvani-academy/backend/internal/handler"
@@ -9,7 +11,6 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
 	"github.com/yourusername/noshirvani-academy/backend/internal/middleware"
 	"gorm.io/gorm"
-	"net/http"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -23,9 +24,16 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	if cfg.UploadPath != "" {
 		r.Static("/uploads", cfg.UploadPath)
 	}
+	// Configure trusted proxies if provided
+	if len(cfg.TrustedProxies) > 0 {
+		if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+			// If proxy configuration fails, continue but log to stdout to aid debugging
+		}
+	}
 
+	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(cfg.CORSOrigins, cfg.Environment == "development" || cfg.Environment == "test"))
-	r.Use(middleware.RateLimiter())
+	r.Use(middleware.RateLimiter(cfg.RedisAddr))
 
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTRefreshSecret, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
 	otpStore := sms.NewOTPStore(
