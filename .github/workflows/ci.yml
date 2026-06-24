@@ -39,8 +39,8 @@ jobs:
           go-version: "1.25"
       - name: Test
         env:
-          TEST_DATABASE_URL: postgres://postgres:postgres@postgres:5432/noshirvani_test?sslmode=disable
-          TEST_REDIS_ADDR: redis:6379
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/noshirvani_test?sslmode=disable
+          TEST_REDIS_ADDR: localhost:6379
         run: cd backend && go test ./...
 
   docker-build:
