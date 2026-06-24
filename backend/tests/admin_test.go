@@ -27,8 +27,8 @@ func TestAdminRBAC(t *testing.T) {
 func TestAdminListStudents(t *testing.T) {
 	resetDB(t)
 	_, adminToken := createAdmin(t)
-	createStudent(t)
-	createStudent(t)
+	createPendingStudent(t)
+	createPendingStudent(t)
 
 	t.Run("list", func(t *testing.T) {
 		resp := do(t, http.MethodGet, "/admin/students", adminToken, nil)

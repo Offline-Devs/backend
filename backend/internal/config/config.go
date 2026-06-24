@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	phoneutil "github.com/yourusername/noshirvani-academy/backend/internal/phone"
 )
 
 type Config struct {
@@ -142,8 +144,11 @@ func splitCSV(value string) []string {
 
 func phoneSet(value string) map[string]bool {
 	phones := map[string]bool{}
-	for _, phone := range splitCSV(value) {
-		phones[phone] = true
+	for _, rawPhone := range splitCSV(value) {
+		normalized := phoneutil.Normalize(rawPhone)
+		if normalized != "" {
+			phones[normalized] = true
+		}
 	}
 	return phones
 }

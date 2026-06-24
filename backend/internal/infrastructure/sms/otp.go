@@ -5,14 +5,15 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	phoneutil "github.com/yourusername/noshirvani-academy/backend/internal/phone"
 )
 
 // Rate limiting constants
@@ -23,6 +24,9 @@ const (
 	RateLimitWindow = 5 * time.Minute
 	// Minimum time between OTP requests (1 minute)
 	MinRequestInterval = 1 * time.Minute
+	// Maximum failed OTP verification attempts before temporary lock.
+	MaxOTPVerifyAttempts = 5
+	otpTTL               = 2 * time.Minute
 )
 
 type OTPStore struct {
@@ -60,6 +64,15 @@ func (e *RateLimitError) Error() string {
 	return e.Message
 }
 
+type VerifyLimitError struct {
+	RetryAfter time.Duration
+	Message    string
+}
+
+func (e *VerifyLimitError) Error() string {
+	return e.Message
+}
+
 // NewOTPStore creates a new OTP store with Redis backend and SMS.ir template
 func NewOTPStore(redisAddr, provider, apiKey, templateID string) *OTPStore {
 	rdb := redis.NewClient(&redis.Options{
@@ -87,6 +100,7 @@ func NewOTPStore(redisAddr, provider, apiKey, templateID string) *OTPStore {
 // GenerateOTP generates a new OTP code and stores it in Redis with 2-minute TTL
 func (s *OTPStore) GenerateOTP(phone string) (string, error) {
 	ctx := context.Background()
+	phone = NormalizePhone(phone)
 
 	// Check rate limits
 	if err := s.checkRateLimit(ctx, phone); err != nil {
@@ -100,9 +114,12 @@ func (s *OTPStore) GenerateOTP(phone string) (string, error) {
 
 	// Store in Redis with 2-minute expiration
 	key := fmt.Sprintf("otp:%s", phone)
-	err = s.redisClient.Set(ctx, key, code, 2*time.Minute).Err()
+	err = s.redisClient.Set(ctx, key, code, otpTTL).Err()
 	if err != nil {
 		return "", fmt.Errorf("failed to store OTP in Redis: %w", err)
+	}
+	if err := s.resetVerifyState(ctx, phone); err != nil {
+		return "", fmt.Errorf("failed to reset otp verify state: %w", err)
 	}
 
 	// Send SMS
@@ -240,48 +257,99 @@ func (s *OTPStore) sendSMS(phone, code string) error {
 }
 
 // VerifyOTP checks if the provided code matches the stored OTP in Redis
-func (s *OTPStore) VerifyOTP(phone, code string) bool {
+func (s *OTPStore) VerifyOTP(phone, code string) (bool, error) {
 	ctx := context.Background()
+	phone = NormalizePhone(phone)
+	if err := s.checkVerifyLimit(ctx, phone); err != nil {
+		return false, err
+	}
 	key := fmt.Sprintf("otp:%s", phone)
 
 	// Get OTP from Redis
 	storedCode, err := s.redisClient.Get(ctx, key).Result()
 	if err == redis.Nil {
 		// OTP not found or expired
-		return false
+		return false, nil
 	} else if err != nil {
 		fmt.Printf("[ERROR] Redis error during OTP verification: %v\n", err)
-		return false
+		return false, nil
 	}
 
 	// Check if code matches
 	if storedCode == code {
 		// Delete OTP after successful verification (one-time use)
 		s.redisClient.Del(ctx, key)
-		return true
+		if err := s.resetVerifyState(ctx, phone); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
-	return false
+	if err := s.incrementVerifyAttempt(ctx, phone); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
-// normalizePhoneForSMSIR converts phone number to SMS.ir format
-// Accepts: +989123456789, 989123456789, 09123456789
-// Returns: 09123456789
+func NormalizePhone(raw string) string {
+	return phoneutil.Normalize(raw)
+}
+
 func normalizePhoneForSMSIR(phone string) string {
-	// Remove + prefix
-	phone = strings.TrimPrefix(phone, "+")
+	return NormalizePhone(phone)
+}
 
-	// Remove 98 country code if present
-	if strings.HasPrefix(phone, "98") {
-		phone = "0" + phone[2:]
+func (s *OTPStore) checkVerifyLimit(ctx context.Context, phone string) error {
+	lockKey := fmt.Sprintf("otp:lock:%s", phone)
+	locked, err := s.redisClient.Exists(ctx, lockKey).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		fmt.Printf("[WARNING] OTP verify lock check failed: %v\n", err)
+		return nil
+	}
+	if locked == 0 {
+		return nil
 	}
 
-	// Ensure it starts with 0
-	if !strings.HasPrefix(phone, "0") {
-		phone = "0" + phone
+	ttl, _ := s.redisClient.TTL(ctx, lockKey).Result()
+	if ttl <= 0 {
+		ttl = otpTTL
+	}
+	return &VerifyLimitError{
+		RetryAfter: ttl,
+		Message:    fmt.Sprintf("Too many invalid OTP attempts. Please try again in %d seconds", int(ttl.Seconds())+1),
+	}
+}
+
+func (s *OTPStore) incrementVerifyAttempt(ctx context.Context, phone string) error {
+	attemptKey := fmt.Sprintf("otp:attempt:%s", phone)
+	lockKey := fmt.Sprintf("otp:lock:%s", phone)
+	otpKey := fmt.Sprintf("otp:%s", phone)
+
+	ttl, err := s.redisClient.TTL(ctx, otpKey).Result()
+	if err != nil || ttl <= 0 {
+		ttl = otpTTL
 	}
 
-	return phone
+	count, err := s.redisClient.Incr(ctx, attemptKey).Result()
+	if err != nil {
+		return err
+	}
+	if err := s.redisClient.Expire(ctx, attemptKey, ttl).Err(); err != nil {
+		return err
+	}
+	if count < MaxOTPVerifyAttempts {
+		return nil
+	}
+	return s.redisClient.Set(ctx, lockKey, 1, ttl).Err()
+}
+
+func (s *OTPStore) resetVerifyState(ctx context.Context, phone string) error {
+	return s.redisClient.Del(
+		ctx,
+		fmt.Sprintf("otp:attempt:%s", phone),
+		fmt.Sprintf("otp:lock:%s", phone),
+	).Err()
 }
 
 func generateNumericOTP(length int) (string, error) {

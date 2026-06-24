@@ -43,22 +43,14 @@ func doUpload(t *testing.T, path, token string, fieldName string, files map[stri
 // POST /upload
 func TestUploadFile(t *testing.T) {
 	resetDB(t)
-	_, token := createUser(t, "student")
+	_, _, token := createPendingStudent(t)
 
-	t.Run("valid png", func(t *testing.T) {
+	t.Run("pending student blocked", func(t *testing.T) {
 		resp := doUpload(t, "/upload?type=profile", token, "file", map[string][]byte{
 			"avatar.png": []byte("\x89PNG\r\n\x1a\nfake-image-bytes"),
 		})
-		if resp.Code != http.StatusOK {
-			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
-		}
-		var body struct {
-			URL      string `json:"url"`
-			Filename string `json:"filename"`
-		}
-		resp.JSON(t, &body)
-		if body.URL == "" {
-			t.Fatalf("expected url, got %s", resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -66,8 +58,8 @@ func TestUploadFile(t *testing.T) {
 		resp := doUpload(t, "/upload", token, "file", map[string][]byte{
 			"malware.exe": []byte("MZ..."),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -75,8 +67,8 @@ func TestUploadFile(t *testing.T) {
 		resp := doUpload(t, "/upload", token, "wrongfield", map[string][]byte{
 			"x.png": []byte("data"),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -91,8 +83,18 @@ func TestUploadFile(t *testing.T) {
 		resp := doUpload(t, "/upload?type=../../tmp/pwn", token, "file", map[string][]byte{
 			"avatar.png": []byte("png"),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("approved student can upload", func(t *testing.T) {
+		_, _, approvedToken := createStudent(t)
+		resp := doUpload(t, "/upload?type=profile", approvedToken, "file", map[string][]byte{
+			"avatar.png": []byte("\x89PNG\r\n\x1a\nfake-image-bytes"),
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }
@@ -100,22 +102,15 @@ func TestUploadFile(t *testing.T) {
 // POST /upload/multiple
 func TestUploadMultiple(t *testing.T) {
 	resetDB(t)
-	_, token := createUser(t, "student")
+	_, _, token := createPendingStudent(t)
 
-	t.Run("two valid files", func(t *testing.T) {
+	t.Run("pending student blocked", func(t *testing.T) {
 		resp := doUpload(t, "/upload/multiple", token, "files", map[string][]byte{
 			"a.png": []byte("img-a"),
 			"b.pdf": []byte("pdf-b"),
 		})
-		if resp.Code != http.StatusOK {
-			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
-		}
-		var body []struct {
-			URL string `json:"url"`
-		}
-		resp.JSON(t, &body)
-		if len(body) != 2 {
-			t.Fatalf("expected 2 uploaded files, got %d: %s", len(body), resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -123,8 +118,8 @@ func TestUploadMultiple(t *testing.T) {
 		resp := doUpload(t, "/upload/multiple", token, "files", map[string][]byte{
 			"a.exe": []byte("x"),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -132,8 +127,8 @@ func TestUploadMultiple(t *testing.T) {
 		resp := doUpload(t, "/upload/multiple", token, "wrongfield", map[string][]byte{
 			"a.png": []byte("x"),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 
@@ -141,8 +136,19 @@ func TestUploadMultiple(t *testing.T) {
 		resp := doUpload(t, "/upload/multiple?type=../../tmp/pwn", token, "files", map[string][]byte{
 			"a.png": []byte("x"),
 		})
-		if resp.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("approved student multiple upload works", func(t *testing.T) {
+		_, _, approvedToken := createStudent(t)
+		resp := doUpload(t, "/upload/multiple", approvedToken, "files", map[string][]byte{
+			"a.png": []byte("img-a"),
+			"b.pdf": []byte("pdf-b"),
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }

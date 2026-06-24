@@ -187,8 +187,8 @@ func TestExamWithoutProfile(t *testing.T) {
 	resetDB(t)
 	_, token := createUser(t, "student")
 	resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{"title": "x"})
-	if resp.Code != http.StatusNotFound {
-		t.Fatalf("expected 404 (no profile), got %d: %s", resp.Code, resp.Body)
+	if resp.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 (approval required), got %d: %s", resp.Code, resp.Body)
 	}
 }
 

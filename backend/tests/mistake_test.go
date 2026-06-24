@@ -106,8 +106,8 @@ func TestMistakeWithoutProfile(t *testing.T) {
 	resetDB(t)
 	_, token := createUser(t, "student")
 	resp := do(t, http.MethodPost, "/mistakes", token, map[string]interface{}{"question_number": 1})
-	if resp.Code != http.StatusNotFound {
-		t.Fatalf("expected 404 (no profile), got %d: %s", resp.Code, resp.Body)
+	if resp.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 (approval required), got %d: %s", resp.Code, resp.Body)
 	}
 }
 

@@ -148,8 +148,16 @@ func TestStudentPerformance(t *testing.T) {
 	t.Run("no profile -> 404", func(t *testing.T) {
 		_, noProfileToken := createUser(t, "student")
 		resp := do(t, http.MethodGet, "/students/performance", noProfileToken, nil)
-		if resp.Code != http.StatusNotFound {
-			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("pending student -> 403", func(t *testing.T) {
+		_, _, pendingToken := createPendingStudent(t)
+		resp := do(t, http.MethodGet, "/students/performance", pendingToken, nil)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }
@@ -235,8 +243,16 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 	t.Run("statistics no profile -> 404", func(t *testing.T) {
 		_, noProfileToken := createUser(t, "student")
 		resp := do(t, http.MethodGet, "/students/statistics", noProfileToken, nil)
-		if resp.Code != http.StatusNotFound {
-			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("pending student blocked from dashboard", func(t *testing.T) {
+		_, _, pendingToken := createPendingStudent(t)
+		resp := do(t, http.MethodGet, "/students/dashboard", pendingToken, nil)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }

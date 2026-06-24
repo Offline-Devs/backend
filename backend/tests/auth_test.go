@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
+	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
 	"github.com/yourusername/noshirvani-academy/backend/internal/router"
 )
 
@@ -106,12 +107,57 @@ func TestVerifyOTP(t *testing.T) {
 		}
 	})
 
+	t.Run("normalized phone maps to same user and admin role", func(t *testing.T) {
+		phoneA := "+98" + adminPhone[1:]
+		codeA := requestOTP(t, phoneA)
+		respA := do(t, http.MethodPost, "/auth/verify-otp", "", map[string]string{"phone": phoneA, "code": codeA})
+		if respA.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", respA.Code, respA.Body)
+		}
+		var bodyA struct {
+			User domain.User `json:"user"`
+		}
+		respA.JSON(t, &bodyA)
+
+		phoneB := sms.NormalizePhone(adminPhone)
+		codeB := requestOTP(t, phoneB)
+		respB := do(t, http.MethodPost, "/auth/verify-otp", "", map[string]string{"phone": phoneB, "code": codeB})
+		if respB.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", respB.Code, respB.Body)
+		}
+		var bodyB struct {
+			User domain.User `json:"user"`
+		}
+		respB.JSON(t, &bodyB)
+		if bodyA.User.ID != bodyB.User.ID {
+			t.Fatalf("expected same user for normalized phone, got %q vs %q", bodyA.User.ID, bodyB.User.ID)
+		}
+		if bodyB.User.Role != "admin" {
+			t.Fatalf("expected admin role for normalized admin phone, got %q", bodyB.User.Role)
+		}
+	})
+
 	t.Run("wrong code -> 401", func(t *testing.T) {
 		phone := uniquePhone()
 		requestOTP(t, phone)
 		resp := do(t, http.MethodPost, "/auth/verify-otp", "", map[string]string{"phone": phone, "code": "000000"})
 		if resp.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("too many wrong codes -> 429", func(t *testing.T) {
+		phone := uniquePhone()
+		requestOTP(t, phone)
+		for i := 0; i < sms.MaxOTPVerifyAttempts; i++ {
+			resp := do(t, http.MethodPost, "/auth/verify-otp", "", map[string]string{"phone": phone, "code": "000000"})
+			if resp.Code != http.StatusUnauthorized {
+				t.Fatalf("attempt %d expected 401, got %d: %s", i+1, resp.Code, resp.Body)
+			}
+		}
+		locked := do(t, http.MethodPost, "/auth/verify-otp", "", map[string]string{"phone": phone, "code": "000000"})
+		if locked.Code != http.StatusTooManyRequests {
+			t.Fatalf("expected 429 after lockout, got %d: %s", locked.Code, locked.Body)
 		}
 	})
 
@@ -239,6 +285,28 @@ func TestAuthMiddleware(t *testing.T) {
 		resp := do(t, http.MethodGet, "/students/profile", "aaa.bbb.ccc", nil)
 		if resp.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("inactive user on protected route -> 403", func(t *testing.T) {
+		userID, token := createUser(t, "admin")
+		if err := testDB.Exec("UPDATE users SET is_active = false WHERE id = ?", userID).Error; err != nil {
+			t.Fatalf("deactivate user: %v", err)
+		}
+		resp := do(t, http.MethodGet, "/admin/students", token, nil)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("role changes take effect immediately", func(t *testing.T) {
+		userID, token := createUser(t, "admin")
+		if err := testDB.Exec("UPDATE users SET role = 'student' WHERE id = ?", userID).Error; err != nil {
+			t.Fatalf("change role: %v", err)
+		}
+		resp := do(t, http.MethodGet, "/admin/students", token, nil)
+		if resp.Code != http.StatusForbidden {
+			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
 }

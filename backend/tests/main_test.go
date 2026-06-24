@@ -20,6 +20,7 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/auth"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/database"
+	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
 	"github.com/yourusername/noshirvani-academy/backend/internal/router"
 )
 
@@ -115,7 +116,14 @@ func clearOTPLimits(t *testing.T, phone string) {
 	rdb := redisClient()
 	defer rdb.Close()
 	ctx := context.Background()
-	rdb.Del(ctx, "otp:"+phone, "otp:last:"+phone, "otp:rate:"+phone)
+	normalized := sms.NormalizePhone(phone)
+	rdb.Del(ctx,
+		"otp:"+normalized,
+		"otp:last:"+normalized,
+		"otp:rate:"+normalized,
+		"otp:attempt:"+normalized,
+		"otp:lock:"+normalized,
+	)
 }
 
 // uniquePhone returns a distinct, valid-looking phone for each call so that
@@ -190,13 +198,22 @@ func createUser(t *testing.T, role string) (string, string) {
 
 // createStudent inserts a user + student profile and returns ids + token.
 func createStudent(t *testing.T) (userID, studentID, token string) {
+	return createStudentWithApproval(t, true)
+}
+
+func createPendingStudent(t *testing.T) (userID, studentID, token string) {
+	return createStudentWithApproval(t, false)
+}
+
+func createStudentWithApproval(t *testing.T, approved bool) (userID, studentID, token string) {
 	t.Helper()
 	userID, token = createUser(t, "student")
 	student := domain.Student{
-		UserID:    userID,
-		FirstName: "Test",
-		LastName:  "Student",
-		Major:     "ریاضی",
+		UserID:     userID,
+		FirstName:  "Test",
+		LastName:   "Student",
+		Major:      "ریاضی",
+		IsApproved: approved,
 	}
 	if err := testDB.Create(&student).Error; err != nil {
 		t.Fatalf("failed to create student: %v", err)

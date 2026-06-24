@@ -87,38 +87,42 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		api.GET("/subjects", subjectsH.GetSubjectsByMajor)
 		api.GET("/majors", subjectsH.GetAllMajors)
 
-		protected := api.Group("")
-		protected.Use(middleware.AuthMiddleware(jwtService))
+		authenticated := api.Group("")
+		authenticated.Use(middleware.AuthMiddleware(jwtService, db))
 		{
 			studentH := handler.NewStudentHandler(db)
-			protected.POST("/students/profile", studentH.CompleteProfile)
-			protected.GET("/students/profile", studentH.GetProfile)
-
-			examH := handler.NewExamHandler(db)
-			protected.POST("/exams", examH.CreateExam)
-			protected.GET("/exams", examH.ListExams)
-			protected.GET("/exams/:id", examH.GetExam)
-			protected.PUT("/exams/:id", examH.UpdateExam)
-			protected.DELETE("/exams/:id", examH.DeleteExam)
-
-			mistakeH := handler.NewMistakeHandler(db)
-			protected.POST("/mistakes", mistakeH.Create)
-			protected.GET("/mistakes", mistakeH.List)
-			protected.PUT("/mistakes/:id", mistakeH.Update)
-			protected.DELETE("/mistakes/:id", mistakeH.Delete)
+			authenticated.POST("/students/profile", studentH.CompleteProfile)
+			authenticated.GET("/students/profile", studentH.GetProfile)
 
 			performanceH := handler.NewPerformanceHandler(db)
-			protected.GET("/students/performance", performanceH.GetStudentPerformance)
-
 			statisticsH := handler.NewStatisticsHandler(db)
-			protected.GET("/students/statistics", statisticsH.GetStudentStatistics)
-			protected.GET("/students/dashboard", statisticsH.GetDashboardSummary)
 
-			uploadH := handler.NewUploadHandler(cfg.UploadPath)
-			protected.POST("/upload", uploadH.UploadFile)
-			protected.POST("/upload/multiple", uploadH.UploadMultiple)
+			studentProtected := authenticated.Group("")
+			studentProtected.Use(middleware.RequireRole("student"), middleware.RequireApprovedStudent(db))
+			{
+				examH := handler.NewExamHandler(db)
+				studentProtected.POST("/exams", examH.CreateExam)
+				studentProtected.GET("/exams", examH.ListExams)
+				studentProtected.GET("/exams/:id", examH.GetExam)
+				studentProtected.PUT("/exams/:id", examH.UpdateExam)
+				studentProtected.DELETE("/exams/:id", examH.DeleteExam)
 
-			admin := protected.Group("/admin")
+				mistakeH := handler.NewMistakeHandler(db)
+				studentProtected.POST("/mistakes", mistakeH.Create)
+				studentProtected.GET("/mistakes", mistakeH.List)
+				studentProtected.PUT("/mistakes/:id", mistakeH.Update)
+				studentProtected.DELETE("/mistakes/:id", mistakeH.Delete)
+
+				studentProtected.GET("/students/performance", performanceH.GetStudentPerformance)
+				studentProtected.GET("/students/statistics", statisticsH.GetStudentStatistics)
+				studentProtected.GET("/students/dashboard", statisticsH.GetDashboardSummary)
+
+				uploadH := handler.NewUploadHandler(cfg.UploadPath)
+				studentProtected.POST("/upload", uploadH.UploadFile)
+				studentProtected.POST("/upload/multiple", uploadH.UploadMultiple)
+			}
+
+			admin := authenticated.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
 				adminH := handler.NewAdminHandler(db)

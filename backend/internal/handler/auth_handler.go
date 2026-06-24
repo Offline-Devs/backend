@@ -8,16 +8,17 @@ import (
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/auth"
 	"github.com/yourusername/noshirvani-academy/backend/internal/infrastructure/sms"
+	phoneutil "github.com/yourusername/noshirvani-academy/backend/internal/phone"
 	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
-	db          *gorm.DB
-	jwtService  *auth.JWTService
-	otpStore    *sms.OTPStore
-	otpProvider string
+	db            *gorm.DB
+	jwtService    *auth.JWTService
+	otpStore      *sms.OTPStore
+	otpProvider   string
 	exposeMockOTP bool
-	adminPhones map[string]bool
+	adminPhones   map[string]bool
 }
 
 // RequestOTPInput درخواست OTP را نشان می‌دهد
@@ -93,6 +94,7 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	input.Phone = phoneutil.Normalize(input.Phone)
 
 	otp, err := h.otpStore.GenerateOTP(input.Phone)
 	if err != nil {
@@ -135,8 +137,19 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
+	input.Phone = phoneutil.Normalize(input.Phone)
 
-	if !h.otpStore.VerifyOTP(input.Phone, input.Code) {
+	ok, err := h.otpStore.VerifyOTP(input.Phone, input.Code)
+	if err != nil {
+		var verifyLimitErr *sms.VerifyLimitError
+		if errors.As(err, &verifyLimitErr) {
+			c.JSON(http.StatusTooManyRequests, ErrorResponse{Error: verifyLimitErr.Message})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to verify otp"})
+		return
+	}
+	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid or expired otp"})
 		return
 	}
