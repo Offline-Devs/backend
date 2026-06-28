@@ -102,6 +102,10 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			authenticated.POST("/students/profile", middleware.RequireRole("student"), studentH.CompleteProfile)
 			authenticated.GET("/students/profile", studentH.GetProfile)
 
+			uploadH := handler.NewUploadHandler(cfg.UploadPath)
+			authenticated.POST("/upload", uploadH.UploadFile)
+			authenticated.POST("/upload/multiple", uploadH.UploadMultiple)
+
 			performanceH := handler.NewPerformanceHandler(db)
 			statisticsH := handler.NewStatisticsHandler(db)
 
@@ -125,18 +129,11 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				studentProtected.GET("/students/statistics", statisticsH.GetStudentStatistics)
 				studentProtected.GET("/students/dashboard", statisticsH.GetDashboardSummary)
 
-				uploadH := handler.NewUploadHandler(cfg.UploadPath)
-				studentProtected.POST("/upload", uploadH.UploadFile)
-				studentProtected.POST("/upload/multiple", uploadH.UploadMultiple)
 			}
 
 			admin := authenticated.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
-				uploadH := handler.NewUploadHandler(cfg.UploadPath)
-				admin.POST("/upload", uploadH.UploadFile)
-				admin.POST("/upload/multiple", uploadH.UploadMultiple)
-
 				adminH := handler.NewAdminHandler(db)
 				admin.GET("/students", adminH.ListStudents)
 				admin.GET("/students/with-stats", adminH.GetAllStudentsWithStats)
