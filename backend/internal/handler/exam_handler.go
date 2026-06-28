@@ -328,6 +328,11 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		}
 
 		if input.Subjects != nil {
+			if err := tx.Model(&domain.Mistake{}).
+				Where("subject_exam_id IN (SELECT id FROM subject_exams WHERE exam_id = ?)", exam.ID).
+				Update("subject_exam_id", nil).Error; err != nil {
+				return err
+			}
 			if err := tx.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
 				return err
 			}
