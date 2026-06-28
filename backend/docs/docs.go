@@ -2596,12 +2596,6 @@ const docTemplate = `{
         "github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam": {
             "type": "object",
             "properties": {
-                "answered": {
-                    "type": "integer"
-                },
-                "blank": {
-                    "type": "integer"
-                },
                 "correct": {
                     "type": "integer"
                 },
@@ -2610,9 +2604,6 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
-                },
-                "percentage": {
-                    "type": "number"
                 },
                 "subject_name": {
                     "type": "string"

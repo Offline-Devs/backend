@@ -87,12 +87,9 @@ type SubjectExam struct {
 	ID             string  `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	ExamID         string  `gorm:"index;not null" json:"exam_id"`
 	SubjectName    string  `gorm:"not null" json:"subject_name"`
-	TotalQuestions int     `json:"total_questions"`
-	Answered       int     `json:"answered"`
-	Correct        int     `json:"correct"`
-	Wrong          int     `json:"wrong"`
-	Blank          int     `json:"blank"`
-	Percentage     float64 `gorm:"-" json:"percentage"`
+	TotalQuestions int    `json:"total_questions"`
+	Correct        int    `json:"correct"`
+	Wrong          int    `json:"wrong"`
 
 	Exam Exam `gorm:"foreignKey:ExamID" json:"-"`
 }

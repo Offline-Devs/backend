@@ -350,10 +350,8 @@ curl -X POST http://localhost:8080/api/v1/exams \
       {
         "subject_name": "ریاضی",
         "total_questions": 50,
-        "answered": 45,
         "correct": 40,
-        "wrong": 5,
-        "blank": 5
+        "wrong": 5
       }
     ]
   }'

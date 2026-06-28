@@ -175,18 +175,12 @@ definitions:
     type: object
   github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam:
     properties:
-      answered:
-        type: integer
-      blank:
-        type: integer
       correct:
         type: integer
       exam_id:
         type: string
       id:
         type: string
-      percentage:
-        type: number
       subject_name:
         type: string
       total_questions:

@@ -176,7 +176,7 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 			s.TotalQuestions += subject.TotalQuestions
 			s.Correct += subject.Correct
 			s.Wrong += subject.Wrong
-			s.Blank += subject.Blank
+			s.Blank += subject.TotalQuestions - subject.Correct - subject.Wrong
 			subjectPenalty[subject.SubjectName] += float64(subject.Wrong) * exam.NegativeMark
 
 			if subject.TotalQuestions > 0 {

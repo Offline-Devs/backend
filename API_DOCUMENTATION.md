@@ -118,8 +118,8 @@ curl -X POST http://localhost:8080/api/v1/exams \
       {
         "subject_name": "جبر",
         "total_questions": 20,
-        "answered": 18,
-        "correct": 16
+        "correct": 16,
+        "wrong": 2
       }
     ]
   }'
