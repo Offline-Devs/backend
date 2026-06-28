@@ -99,7 +99,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		authenticated.Use(middleware.AuthMiddleware(jwtService, db))
 		{
 			studentH := handler.NewStudentHandler(db)
-			authenticated.POST("/students/profile", studentH.CompleteProfile)
+			authenticated.POST("/students/profile", middleware.RequireRole("student"), studentH.CompleteProfile)
 			authenticated.GET("/students/profile", studentH.GetProfile)
 
 			performanceH := handler.NewPerformanceHandler(db)
@@ -133,6 +133,10 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			admin := authenticated.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
+				uploadH := handler.NewUploadHandler(cfg.UploadPath)
+				admin.POST("/upload", uploadH.UploadFile)
+				admin.POST("/upload/multiple", uploadH.UploadMultiple)
+
 				adminH := handler.NewAdminHandler(db)
 				admin.GET("/students", adminH.ListStudents)
 				admin.GET("/students/with-stats", adminH.GetAllStudentsWithStats)

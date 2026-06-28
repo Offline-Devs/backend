@@ -146,6 +146,11 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		updates["birth_date"] = *input.BirthDate
 	}
 
+	if student.IsApproved {
+		updates["is_approved"] = false
+		updates["approval_date"] = nil
+	}
+
 	if err := h.db.Model(&student).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update profile"})
 		return
