@@ -2,7 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
@@ -54,9 +56,7 @@ func (h *BlogHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
-	if input.Slug == "" {
-		input.Slug = slugify(input.Title)
-	}
+	input.Slug = slugify(firstNonEmpty(input.Slug, input.Title))
 
 	post := domain.BlogPost{
 		Title:     input.Title,
@@ -94,9 +94,7 @@ func (h *BlogHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
 		return
 	}
-	if input.Slug == "" && input.Title != "" {
-		input.Slug = slugify(input.Title)
-	}
+	input.Slug = slugify(firstNonEmpty(input.Slug, input.Title))
 
 	updates := map[string]interface{}{
 		"title":     input.Title,
@@ -213,7 +211,14 @@ func (h *BlogHandler) PublicList(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /blog/{slug} [get]
 func (h *BlogHandler) PublicGet(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := strings.Trim(c.Param("slug"), "/")
+	if decoded, err := url.PathUnescape(slug); err == nil {
+		slug = strings.Trim(decoded, "/")
+	}
+	if slug == "" {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
+		return
+	}
 	var post domain.BlogPost
 	if err := h.db.Where("slug = ? AND published = ?", slug, true).First(&post).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "post not found"})
@@ -223,8 +228,30 @@ func (h *BlogHandler) PublicGet(c *gin.Context) {
 }
 
 func slugify(input string) string {
-	output := strings.ToLower(strings.TrimSpace(input))
-	output = strings.ReplaceAll(output, " ", "-")
-	output = strings.ReplaceAll(output, "--", "-")
-	return output
+	input = strings.TrimSpace(input)
+	var builder strings.Builder
+	lastHyphen := false
+
+	for _, r := range input {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			builder.WriteRune(unicode.ToLower(r))
+			lastHyphen = false
+			continue
+		}
+		if !lastHyphen && builder.Len() > 0 {
+			builder.WriteRune('-')
+			lastHyphen = true
+		}
+	}
+
+	return strings.Trim(builder.String(), "-")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }

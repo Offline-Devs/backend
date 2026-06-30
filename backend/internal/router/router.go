@@ -91,7 +91,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		api.POST("/auth/verify-otp", authH.VerifyOTP)
 		api.POST("/auth/refresh", authH.RefreshToken)
 		api.GET("/blog", blogH.PublicList)
-		api.GET("/blog/:slug", blogH.PublicGet)
+		api.GET("/blog/*slug", blogH.PublicGet)
 		api.GET("/subjects", subjectsH.GetSubjectsByMajor)
 		api.GET("/majors", subjectsH.GetAllMajors)
 

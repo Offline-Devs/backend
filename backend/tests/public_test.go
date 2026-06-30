@@ -74,9 +74,13 @@ func TestPublicBlog(t *testing.T) {
 
 	// Seed one published and one unpublished post.
 	published := domain.BlogPost{Title: "Hello World", Slug: "hello-world", Content: "body", Published: true}
+	nested := domain.BlogPost{Title: "Nested", Slug: "nested/article", Content: "body", Published: true}
 	draft := domain.BlogPost{Title: "Draft", Slug: "draft", Content: "body", Published: false}
 	if err := testDB.Create(&published).Error; err != nil {
 		t.Fatalf("seed published: %v", err)
+	}
+	if err := testDB.Create(&nested).Error; err != nil {
+		t.Fatalf("seed nested: %v", err)
 	}
 	if err := testDB.Create(&draft).Error; err != nil {
 		t.Fatalf("seed draft: %v", err)
@@ -89,13 +93,20 @@ func TestPublicBlog(t *testing.T) {
 		}
 		var posts []domain.BlogPost
 		resp.JSON(t, &posts)
-		if len(posts) != 1 || posts[0].Slug != "hello-world" {
-			t.Fatalf("expected only published post, got %+v", posts)
+		if len(posts) != 2 {
+			t.Fatalf("expected only published posts, got %+v", posts)
 		}
 	})
 
 	t.Run("public get by slug", func(t *testing.T) {
 		resp := do(t, http.MethodGet, "/blog/hello-world", "", nil)
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("public get by nested slug", func(t *testing.T) {
+		resp := do(t, http.MethodGet, "/blog/nested/article", "", nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
 		}
