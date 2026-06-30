@@ -437,6 +437,10 @@ func TestAdminBlog(t *testing.T) {
 		if len(posts) != 1 {
 			t.Fatalf("expected published post to appear publicly, got %d", len(posts))
 		}
+		detail := do(t, http.MethodGet, "/blog/renamed-post", "", nil)
+		if detail.Code != http.StatusOK {
+			t.Fatalf("expected published post detail to be public, got %d: %s", detail.Code, detail.Body)
+		}
 	})
 
 	t.Run("publish missing post -> 404", func(t *testing.T) {
