@@ -191,24 +191,24 @@ func (h *AdminHandler) DeleteStudent(c *gin.Context) {
 	}
 
 	if err := h.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.PerformanceHistory{}).Error; err != nil {
+		if err := tx.Unscoped().Where("student_id = ?", student.ID).Delete(&domain.PerformanceHistory{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.Mistake{}).Error; err != nil {
+		if err := tx.Unscoped().Where("student_id = ?", student.ID).Delete(&domain.Mistake{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("exam_id IN (?)",
+		if err := tx.Unscoped().Where("exam_id IN (?)",
 			tx.Model(&domain.Exam{}).Select("id").Where("student_id = ?", student.ID),
 		).Delete(&domain.SubjectExam{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.Exam{}).Error; err != nil {
+		if err := tx.Unscoped().Where("student_id = ?", student.ID).Delete(&domain.Exam{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Delete(&domain.Student{}, "id = ?", student.ID).Error; err != nil {
+		if err := tx.Unscoped().Delete(&domain.Student{}, "id = ?", student.ID).Error; err != nil {
 			return err
 		}
-		if err := tx.Delete(&domain.User{}, "id = ?", student.UserID).Error; err != nil {
+		if err := tx.Unscoped().Delete(&domain.User{}, "id = ?", student.UserID).Error; err != nil {
 			return err
 		}
 		return nil
