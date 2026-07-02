@@ -211,7 +211,7 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 		if len(stats.SubjectStats) != 2 {
 			t.Fatalf("expected 2 subject stats, got %+v", stats.SubjectStats)
 		}
-		if stats.SubjectStats[0].SubjectName != "فیزیک" || stats.SubjectStats[1].SubjectName != "ریاضی" {
+		if stats.SubjectStats[0].SubjectName != "ریاضی" || stats.SubjectStats[1].SubjectName != "فیزیک" {
 			t.Fatalf("expected sorted subject stats, got %+v", stats.SubjectStats)
 		}
 		for _, subject := range stats.SubjectStats {

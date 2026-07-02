@@ -102,16 +102,16 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			authenticated.POST("/students/profile", middleware.RequireRole("student"), studentH.CompleteProfile)
 			authenticated.GET("/students/profile", studentH.GetProfile)
 
-			uploadH := handler.NewUploadHandler(cfg.UploadPath)
-			authenticated.POST("/upload", uploadH.UploadFile)
-			authenticated.POST("/upload/multiple", uploadH.UploadMultiple)
-
 			performanceH := handler.NewPerformanceHandler(db)
 			statisticsH := handler.NewStatisticsHandler(db)
 
 			studentProtected := authenticated.Group("")
 			studentProtected.Use(middleware.RequireRole("student"), middleware.RequireApprovedStudent(db))
 			{
+				uploadH := handler.NewUploadHandler(cfg.UploadPath)
+				studentProtected.POST("/upload", uploadH.UploadFile)
+				studentProtected.POST("/upload/multiple", uploadH.UploadMultiple)
+
 				examH := handler.NewExamHandler(db)
 				studentProtected.POST("/exams", examH.CreateExam)
 				studentProtected.GET("/exams", examH.ListExams)
