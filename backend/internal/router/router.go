@@ -103,10 +103,6 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			authenticated.GET("/dynamic-fields", adminH.GetDynamicFields)
 
 			uploadH := handler.NewUploadHandler(cfg.UploadPath)
-			authenticated.POST("/upload", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadFile)
-			authenticated.POST("/upload/multiple", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadMultiple)
-
-			uploadH := handler.NewUploadHandler(cfg.UploadPath)
 			authenticated.POST("/upload", middleware.RequireApprovedStudentOrAdmin(db), uploadH.UploadFile)
 			authenticated.POST("/upload/multiple", middleware.RequireApprovedStudentOrAdmin(db), uploadH.UploadMultiple)
 
