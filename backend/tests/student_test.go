@@ -2,7 +2,9 @@ package tests
 
 import (
 	"net/http"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/yourusername/noshirvani-academy/backend/internal/domain"
 )
@@ -191,6 +193,10 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 			TotalExams       int64          `json:"total_exams"`
 			AverageScore     float64        `json:"average_score"`
 			MistakesByReason map[string]int `json:"mistakes_by_reason"`
+			SubjectStats     []struct {
+				SubjectName string `json:"subject_name"`
+				Blank       int    `json:"blank"`
+			} `json:"subject_stats"`
 		}
 		resp.JSON(t, &stats)
 		if stats.TotalExams != 1 {
@@ -201,6 +207,17 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 		}
 		if stats.MistakesByReason["carelessness"] != 1 {
 			t.Fatalf("expected mistake category counted, got %+v", stats.MistakesByReason)
+		}
+		if len(stats.SubjectStats) != 2 {
+			t.Fatalf("expected 2 subject stats, got %+v", stats.SubjectStats)
+		}
+		if stats.SubjectStats[0].SubjectName != "فیزیک" || stats.SubjectStats[1].SubjectName != "ریاضی" {
+			t.Fatalf("expected sorted subject stats, got %+v", stats.SubjectStats)
+		}
+		for _, subject := range stats.SubjectStats {
+			if subject.Blank != 0 {
+				t.Fatalf("expected blank=0 for fully answered subjects, got %+v", stats.SubjectStats)
+			}
 		}
 	})
 
@@ -255,4 +272,109 @@ func TestStudentStatisticsAndDashboard(t *testing.T) {
 			t.Fatalf("expected 403, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+}
+
+func TestStudentStatisticsScopesMistakesByDate(t *testing.T) {
+	resetDB(t)
+	_, studentID, token := createStudent(t)
+
+	inRangeDate := time.Date(2025, time.January, 10, 0, 0, 0, 0, time.UTC)
+	outRangeDate := time.Date(2024, time.January, 10, 0, 0, 0, 0, time.UTC)
+
+	inRangeExam := domain.Exam{
+		StudentID:  studentID,
+		Title:      "In Range",
+		ExamDate:   inRangeDate,
+		JalaliDate: "1403/10/21",
+		Subjects: []domain.SubjectExam{
+			{SubjectName: "Math", TotalQuestions: 10, Correct: 8, Wrong: 2},
+		},
+	}
+	if err := testDB.Create(&inRangeExam).Error; err != nil {
+		t.Fatalf("seed in-range exam: %v", err)
+	}
+
+	outRangeExam := domain.Exam{
+		StudentID:  studentID,
+		Title:      "Out Range",
+		ExamDate:   outRangeDate,
+		JalaliDate: "1402/10/20",
+		Subjects: []domain.SubjectExam{
+			{SubjectName: "Physics", TotalQuestions: 10, Correct: 5, Wrong: 5},
+		},
+	}
+	if err := testDB.Create(&outRangeExam).Error; err != nil {
+		t.Fatalf("seed out-range exam: %v", err)
+	}
+
+	if err := testDB.Create(&domain.Mistake{StudentID: studentID, ExamID: &inRangeExam.ID, QuestionNumber: 1, Category: "in-range"}).Error; err != nil {
+		t.Fatalf("seed in-range mistake: %v", err)
+	}
+	if err := testDB.Create(&domain.Mistake{StudentID: studentID, ExamID: &outRangeExam.ID, QuestionNumber: 2, Category: "out-range"}).Error; err != nil {
+		t.Fatalf("seed out-range mistake: %v", err)
+	}
+	if err := testDB.Create(&domain.Mistake{StudentID: studentID, QuestionNumber: 3, Category: "manual"}).Error; err != nil {
+		t.Fatalf("seed manual mistake: %v", err)
+	}
+
+	resp := do(t, http.MethodGet, "/students/statistics?from=1403/10/01&to=1403/10/30", token, nil)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+	}
+
+	var stats struct {
+		TotalExams       int64          `json:"total_exams"`
+		MistakesByReason map[string]int `json:"mistakes_by_reason"`
+	}
+	resp.JSON(t, &stats)
+	if stats.TotalExams != 1 {
+		t.Fatalf("expected 1 in-range exam, got %d", stats.TotalExams)
+	}
+	if len(stats.MistakesByReason) != 1 || stats.MistakesByReason["in-range"] != 1 {
+		t.Fatalf("expected only in-range mistake counted, got %+v", stats.MistakesByReason)
+	}
+}
+
+func TestStudentStatisticsSubjectStatsSorted(t *testing.T) {
+	resetDB(t)
+	_, studentID, token := createStudent(t)
+
+	exam := domain.Exam{
+		StudentID:  studentID,
+		Title:      "Sorted",
+		ExamDate:   time.Date(2025, time.February, 1, 0, 0, 0, 0, time.UTC),
+		JalaliDate: "1403/11/13",
+		Subjects: []domain.SubjectExam{
+			{SubjectName: "Zoology", TotalQuestions: 10, Correct: 9, Wrong: 1},
+			{SubjectName: "Algebra", TotalQuestions: 10, Correct: 7, Wrong: 3},
+			{SubjectName: "Biology", TotalQuestions: 10, Correct: 8, Wrong: 2},
+		},
+	}
+	if err := testDB.Create(&exam).Error; err != nil {
+		t.Fatalf("seed exam: %v", err)
+	}
+
+	resp := do(t, http.MethodGet, "/students/statistics", token, nil)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+	}
+
+	var stats struct {
+		SubjectStats []struct {
+			SubjectName string `json:"subject_name"`
+		} `json:"subject_stats"`
+	}
+	resp.JSON(t, &stats)
+
+	names := make([]string, len(stats.SubjectStats))
+	for i, subject := range stats.SubjectStats {
+		names[i] = subject.SubjectName
+	}
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	for i := range names {
+		if names[i] != sorted[i] {
+			t.Fatalf("expected sorted subject stats, got %v", names)
+		}
+	}
 }

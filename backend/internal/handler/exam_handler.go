@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,7 @@ type CreateExamInput struct {
 	NegativeMark  float64                `json:"negative_mark" description:"نمره منفی هر پاسخ غلط"`
 	TotalSubjects int                    `json:"total_subjects" description:"تعداد کل دروس"`
 	DynamicFields map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
-	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
+	Subjects      []ExamSubjectInput     `json:"subjects" description:"دروس آزمون"`
 }
 
 // UpdateExamInput داده‌های ورودی برای بروزرسانی آزمون
@@ -35,7 +36,14 @@ type UpdateExamInput struct {
 	NegativeMark  *float64               `json:"negative_mark" description:"نمره منفی هر پاسخ غلط"`
 	TotalSubjects *int                   `json:"total_subjects" description:"تعداد کل دروس"`
 	DynamicFields map[string]interface{} `json:"dynamic_fields" description:"فیلدهای سفارشی"`
-	Subjects      []domain.SubjectExam   `json:"subjects" description:"دروس آزمون"`
+	Subjects      []ExamSubjectInput     `json:"subjects" description:"دروس آزمون"`
+}
+
+type ExamSubjectInput struct {
+	SubjectName    string `json:"subject_name" description:"نام درس"`
+	TotalQuestions int    `json:"total_questions" description:"تعداد کل سوالات"`
+	Correct        int    `json:"correct" description:"تعداد پاسخ صحیح"`
+	Wrong          int    `json:"wrong" description:"تعداد پاسخ غلط"`
 }
 
 // Deprecated: استفاده از CreateExamInput کنید
@@ -52,6 +60,29 @@ type createExamInput struct {
 
 func NewExamHandler(db *gorm.DB) *ExamHandler {
 	return &ExamHandler{db: db}
+}
+
+func normalizeSubjects(inputs []ExamSubjectInput) ([]domain.SubjectExam, error) {
+	subjects := make([]domain.SubjectExam, len(inputs))
+	for i, input := range inputs {
+		name := strings.TrimSpace(input.SubjectName)
+		if name == "" {
+			return nil, gorm.ErrInvalidData
+		}
+		if input.TotalQuestions < 0 || input.Correct < 0 || input.Wrong < 0 {
+			return nil, gorm.ErrInvalidData
+		}
+		if input.Correct+input.Wrong > input.TotalQuestions {
+			return nil, gorm.ErrInvalidData
+		}
+		subjects[i] = domain.SubjectExam{
+			SubjectName:    name,
+			TotalQuestions: input.TotalQuestions,
+			Correct:        input.Correct,
+			Wrong:          input.Wrong,
+		}
+	}
+	return subjects, nil
 }
 
 // CreateExam godoc
@@ -76,6 +107,11 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 	}
 	if input.NegativeMark < 0 || input.NegativeMark > 1 {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "negative_mark must be between 0 and 1"})
+		return
+	}
+	subjects, err := normalizeSubjects(input.Subjects)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subject counts"})
 		return
 	}
 
@@ -112,11 +148,6 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		input.JalaliDate = pkg.GregorianToJalaliString(examDate)
 	}
 
-	for i := range input.Subjects {
-		input.Subjects[i].ID = ""
-		input.Subjects[i].ExamID = ""
-	}
-
 	exam := domain.Exam{
 		StudentID:     student.ID,
 		Title:         input.Title,
@@ -126,7 +157,7 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		NegativeMark:  input.NegativeMark,
 		TotalSubjects: input.TotalSubjects,
 		DynamicFields: input.DynamicFields,
-		Subjects:      input.Subjects,
+		Subjects:      subjects,
 	}
 
 	if err := h.db.Create(&exam).Error; err != nil {
@@ -275,6 +306,15 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "exam_date and jalali_date are mutually exclusive"})
 		return
 	}
+	var subjects []domain.SubjectExam
+	if input.Subjects != nil {
+		var err error
+		subjects, err = normalizeSubjects(input.Subjects)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subject counts"})
+			return
+		}
+	}
 
 	var student domain.Student
 	if err := h.db.Where("user_id = ?", userID).First(&student).Error; err != nil {
@@ -336,12 +376,11 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 			if err := tx.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
 				return err
 			}
-			for i := range input.Subjects {
-				input.Subjects[i].ID = ""
-				input.Subjects[i].ExamID = exam.ID
+			for i := range subjects {
+				subjects[i].ExamID = exam.ID
 			}
-			if len(input.Subjects) > 0 {
-				if err := tx.Create(&input.Subjects).Error; err != nil {
+			if len(subjects) > 0 {
+				if err := tx.Create(&subjects).Error; err != nil {
 					return err
 				}
 			}

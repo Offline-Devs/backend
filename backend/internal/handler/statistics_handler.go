@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -207,6 +208,9 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 		}
 		stats.SubjectStats = append(stats.SubjectStats, *subjectStat)
 	}
+	sort.Slice(stats.SubjectStats, func(i, j int) bool {
+		return stats.SubjectStats[i].SubjectName < stats.SubjectStats[j].SubjectName
+	})
 
 	// Calculate average score
 	if examCount > 0 {
@@ -216,6 +220,26 @@ func (h *StatisticsHandler) calculateStatistics(studentID, fromDate, toDate stri
 	// Get mistake statistics
 	var mistakes []domain.Mistake
 	mistakeQuery := h.db.Where("student_id = ?", studentID)
+	if fromDate != "" || toDate != "" {
+		mistakeQuery = mistakeQuery.Where("exam_id IN (?)",
+			h.db.Model(&domain.Exam{}).Select("id").Scopes(func(db *gorm.DB) *gorm.DB {
+				filtered := db.Where("student_id = ?", studentID)
+				if fromDate != "" {
+					fromTime, err := pkg.JalaliToGregorian(fromDate)
+					if err == nil {
+						filtered = filtered.Where("exam_date >= ?", fromTime)
+					}
+				}
+				if toDate != "" {
+					toTime, err := pkg.JalaliToGregorian(toDate)
+					if err == nil {
+						filtered = filtered.Where("exam_date < ?", toTime.Add(24*time.Hour))
+					}
+				}
+				return filtered
+			}),
+		)
+	}
 	if err := mistakeQuery.Find(&mistakes).Error; err == nil {
 		for _, mistake := range mistakes {
 			if mistake.Category != "" {

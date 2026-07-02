@@ -144,9 +144,33 @@ func TestExamCRUD(t *testing.T) {
 		}
 	})
 
+	t.Run("create invalid subject counts -> 400", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/exams", token, map[string]interface{}{
+			"title":       "Bad Subject",
+			"jalali_date": "1403/09/05",
+			"subjects": []map[string]interface{}{
+				{"subject_name": "Math", "total_questions": 10, "correct": 8, "wrong": 3},
+			},
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
 	t.Run("update invalid negative mark -> 400", func(t *testing.T) {
 		resp := do(t, http.MethodPut, "/exams/"+examID, token, map[string]interface{}{
 			"negative_mark": 1.1,
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("update invalid subject counts -> 400", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/exams/"+examID, token, map[string]interface{}{
+			"subjects": []map[string]interface{}{
+				{"subject_name": "Math", "total_questions": 5, "correct": -1, "wrong": 1},
+			},
 		})
 		if resp.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
