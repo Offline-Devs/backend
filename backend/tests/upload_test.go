@@ -161,4 +161,15 @@ func TestUploadMultiple(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+
+	t.Run("admin multiple upload works", func(t *testing.T) {
+		_, adminToken := createAdmin(t)
+		resp := doUpload(t, "/upload/multiple", adminToken, "files", map[string][]byte{
+			"a.pdf": []byte("pdf-content"),
+			"b.zip": []byte("zip-data"),
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
