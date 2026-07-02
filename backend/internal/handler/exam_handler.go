@@ -148,6 +148,12 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		input.JalaliDate = pkg.GregorianToJalaliString(examDate)
 	}
 
+	dynamicFields, err := validateAndCleanDynamicValues(h.db, "exam", input.DynamicFields)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	exam := domain.Exam{
 		StudentID:     student.ID,
 		Title:         input.Title,
@@ -156,7 +162,7 @@ func (h *ExamHandler) CreateExam(c *gin.Context) {
 		Major:         input.Major,
 		NegativeMark:  input.NegativeMark,
 		TotalSubjects: input.TotalSubjects,
-		DynamicFields: input.DynamicFields,
+		DynamicFields: dynamicFields,
 		Subjects:      subjects,
 	}
 
@@ -365,7 +371,12 @@ func (h *ExamHandler) UpdateExam(c *gin.Context) {
 		updates["total_subjects"] = *input.TotalSubjects
 	}
 	if input.DynamicFields != nil {
-		updates["dynamic_fields"] = input.DynamicFields
+		dynamicFields, err := validateAndCleanDynamicValues(h.db, "exam", input.DynamicFields)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		updates["dynamic_fields"] = dynamicFields
 	}
 	if input.JalaliDate != nil {
 		canonicalDate, err := pkg.CanonicalJalaliDate(*input.JalaliDate)

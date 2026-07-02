@@ -123,6 +123,69 @@ func TestStudentProfile(t *testing.T) {
 	})
 }
 
+func TestStudentDynamicFields(t *testing.T) {
+	resetDB(t)
+	if err := testDB.Create(&domain.DynamicFieldDefinition{
+		EntityType: "student",
+		Name:       "guardian_phone",
+		Label:      "Guardian Phone",
+		FieldType:  "text",
+		IsRequired: true,
+		IsActive:   true,
+	}).Error; err != nil {
+		t.Fatalf("seed dynamic field: %v", err)
+	}
+	_, token := createUser(t, "student")
+
+	t.Run("lists active fields for student", func(t *testing.T) {
+		resp := do(t, http.MethodGet, "/dynamic-fields?entity_type=student", token, nil)
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var fields []domain.DynamicFieldDefinition
+		resp.JSON(t, &fields)
+		if len(fields) != 1 || fields[0].Name != "guardian_phone" {
+			t.Fatalf("unexpected dynamic fields: %+v", fields)
+		}
+	})
+
+	t.Run("required field is enforced", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/students/profile", token, map[string]interface{}{
+			"first_name":        "Ali",
+			"last_name":         "Rezaei",
+			"city":              "Tehran",
+			"major":             "ریاضی",
+			"jalali_birth_date": "1380/05/15",
+			"dynamic_fields":    map[string]interface{}{},
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("stores sanitized values", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/students/profile", token, map[string]interface{}{
+			"first_name":        "Ali",
+			"last_name":         "Rezaei",
+			"city":              "Tehran",
+			"major":             "ریاضی",
+			"jalali_birth_date": "1380/05/15",
+			"dynamic_fields": map[string]interface{}{
+				"guardian_phone": " 09120000000 ",
+				"unknown":        "ignored",
+			},
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var student domain.Student
+		resp.JSON(t, &student)
+		if student.DynamicFields["guardian_phone"] != "09120000000" || student.DynamicFields["unknown"] != nil {
+			t.Fatalf("unexpected dynamic values: %+v", student.DynamicFields)
+		}
+	})
+}
+
 // GET /students/performance
 func TestStudentPerformance(t *testing.T) {
 	resetDB(t)

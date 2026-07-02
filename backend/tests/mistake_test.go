@@ -108,6 +108,44 @@ func TestMistakeCRUD(t *testing.T) {
 	})
 }
 
+func TestMistakeDynamicFields(t *testing.T) {
+	resetDB(t)
+	if err := testDB.Create(&domain.DynamicFieldDefinition{
+		EntityType: "mistake",
+		Name:       "review_date",
+		Label:      "Review Date",
+		FieldType:  "date",
+		IsRequired: true,
+		IsActive:   true,
+	}).Error; err != nil {
+		t.Fatalf("seed dynamic field: %v", err)
+	}
+	_, _, token := createStudent(t)
+
+	resp := do(t, http.MethodPost, "/mistakes", token, map[string]interface{}{
+		"question_number": 1,
+		"category":        "carelessness",
+		"dynamic_fields":  map[string]interface{}{"review_date": "not-a-date"},
+	})
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+	}
+
+	resp = do(t, http.MethodPost, "/mistakes", token, map[string]interface{}{
+		"question_number": 1,
+		"category":        "carelessness",
+		"dynamic_fields":  map[string]interface{}{"review_date": "1403/3/3"},
+	})
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", resp.Code, resp.Body)
+	}
+	var mistake domain.Mistake
+	resp.JSON(t, &mistake)
+	if mistake.DynamicFields["review_date"] != "1403/03/03" {
+		t.Fatalf("expected canonical date, got %+v", mistake.DynamicFields)
+	}
+}
+
 // Create without a profile must 404.
 func TestMistakeWithoutProfile(t *testing.T) {
 	resetDB(t)

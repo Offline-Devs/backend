@@ -259,14 +259,21 @@ func (h *AdminHandler) ApproveStudent(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "خطای سرور"
 // @Router /admin/dynamic-fields [get]
 func (h *AdminHandler) GetDynamicFields(c *gin.Context) {
-	entityType := c.Query("entity_type")
+	entityType := strings.TrimSpace(strings.ToLower(c.Query("entity_type")))
 	q := h.db.Model(&domain.DynamicFieldDefinition{})
 	if entityType != "" {
+		if !allowedDynamicFieldEntities[entityType] {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid dynamic field entity_type"})
+			return
+		}
 		q = q.Where("entity_type = ?", entityType)
+	}
+	if role, _ := c.Get("role"); role != "admin" {
+		q = q.Where("is_active = true")
 	}
 
 	var fields []domain.DynamicFieldDefinition
-	if err := q.Order("created_at desc").Find(&fields).Error; err != nil {
+	if err := q.Order("created_at asc").Find(&fields).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load fields"})
 		return
 	}
@@ -293,13 +300,18 @@ func (h *AdminHandler) CreateDynamicField(c *gin.Context) {
 		return
 	}
 
-	field := domain.DynamicFieldDefinition{
-		EntityType: strings.TrimSpace(input.EntityType),
-		Name:       strings.TrimSpace(input.Name),
-		Label:      strings.TrimSpace(input.Label),
-		FieldType:  strings.TrimSpace(input.FieldType),
-		Options:    strings.TrimSpace(input.Options),
-		IsRequired: input.IsRequired,
+	field, err := normalizeDynamicFieldDefinition(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	if err := h.ensureDynamicFieldNameAvailable("", field); err != nil {
+		if err.Error() == "dynamic field already exists" {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create field"})
+		return
 	}
 
 	if err := h.db.Create(&field).Error; err != nil {
@@ -332,13 +344,27 @@ func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 		return
 	}
 
+	field, err := normalizeDynamicFieldDefinition(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	if err := h.ensureDynamicFieldNameAvailable(id, field); err != nil {
+		if err.Error() == "dynamic field already exists" {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update field"})
+		return
+	}
+
 	updates := map[string]interface{}{
-		"entity_type": strings.TrimSpace(input.EntityType),
-		"name":        strings.TrimSpace(input.Name),
-		"label":       strings.TrimSpace(input.Label),
-		"field_type":  strings.TrimSpace(input.FieldType),
-		"options":     strings.TrimSpace(input.Options),
-		"is_required": input.IsRequired,
+		"entity_type": field.EntityType,
+		"name":        field.Name,
+		"label":       field.Label,
+		"field_type":  field.FieldType,
+		"options":     field.Options,
+		"is_required": field.IsRequired,
 	}
 
 	result := h.db.Model(&domain.DynamicFieldDefinition{}).Where("id = ?", id).Updates(updates)

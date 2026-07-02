@@ -387,10 +387,53 @@ func TestAdminDynamicFields(t *testing.T) {
 		resp := do(t, http.MethodPut, "/admin/dynamic-fields/"+fieldID, adminToken, map[string]interface{}{
 			"entity_type": "student",
 			"name":        "guardian_phone",
+			"label":       "Guardian Phone",
 			"field_type":  "number",
 		})
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("reject duplicate name for same entity", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/admin/dynamic-fields", adminToken, map[string]interface{}{
+			"entity_type": "student",
+			"name":        "guardian_phone",
+			"label":       "Duplicate",
+			"field_type":  "text",
+		})
+		if resp.Code != http.StatusConflict {
+			t.Fatalf("expected 409, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("reject invalid definition", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/admin/dynamic-fields", adminToken, map[string]interface{}{
+			"entity_type": "student",
+			"name":        "bad-name",
+			"label":       "Bad",
+			"field_type":  "text",
+		})
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("normalizes select options", func(t *testing.T) {
+		resp := do(t, http.MethodPost, "/admin/dynamic-fields", adminToken, map[string]interface{}{
+			"entity_type": "exam",
+			"name":        "difficulty",
+			"label":       "Difficulty",
+			"field_type":  "select",
+			"options":     `[" easy ","hard","easy"]`,
+		})
+		if resp.Code != http.StatusCreated {
+			t.Fatalf("expected 201, got %d: %s", resp.Code, resp.Body)
+		}
+		var field domain.DynamicFieldDefinition
+		resp.JSON(t, &field)
+		if field.Options != `["easy","hard"]` {
+			t.Fatalf("expected normalized options, got %q", field.Options)
 		}
 	})
 

@@ -234,6 +234,47 @@ func TestExamCRUD(t *testing.T) {
 	})
 }
 
+func TestExamDynamicFields(t *testing.T) {
+	resetDB(t)
+	if err := testDB.Create(&domain.DynamicFieldDefinition{
+		EntityType: "exam",
+		Name:       "difficulty",
+		Label:      "Difficulty",
+		FieldType:  "select",
+		Options:    `["easy","hard"]`,
+		IsRequired: true,
+		IsActive:   true,
+	}).Error; err != nil {
+		t.Fatalf("seed dynamic field: %v", err)
+	}
+	_, _, token := createStudent(t)
+
+	payload := map[string]interface{}{
+		"title":         "Dynamic Exam",
+		"jalali_date":   "1403/03/03",
+		"major":         "ریاضی",
+		"negative_mark": 0.25,
+		"subjects": []map[string]interface{}{
+			{"subject_name": "ریاضی", "total_questions": 10, "correct": 7, "wrong": 3},
+		},
+	}
+	resp := do(t, http.MethodPost, "/exams", token, payload)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for missing required dynamic field, got %d: %s", resp.Code, resp.Body)
+	}
+
+	payload["dynamic_fields"] = map[string]interface{}{"difficulty": "hard", "unknown": "ignored"}
+	resp = do(t, http.MethodPost, "/exams", token, payload)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", resp.Code, resp.Body)
+	}
+	var exam domain.Exam
+	resp.JSON(t, &exam)
+	if exam.DynamicFields["difficulty"] != "hard" || exam.DynamicFields["unknown"] != nil {
+		t.Fatalf("unexpected dynamic values: %+v", exam.DynamicFields)
+	}
+}
+
 // CreateExam without a student profile must 404.
 func TestExamWithoutProfile(t *testing.T) {
 	resetDB(t)

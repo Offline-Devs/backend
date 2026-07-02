@@ -104,6 +104,12 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		input.JalaliBirthDate = pkg.GregorianToJalaliString(*input.BirthDate)
 	}
 
+	dynamicFields, err := validateAndCleanDynamicValues(h.db, "student", input.DynamicFields)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	if err == gorm.ErrRecordNotFound {
 		student = domain.Student{
 			UserID:        userIDStr,
@@ -113,7 +119,7 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 			School:        strings.TrimSpace(input.School),
 			Major:         strings.TrimSpace(input.Major),
 			ProfilePhoto:  strings.TrimSpace(input.ProfilePhoto),
-			DynamicFields: input.DynamicFields,
+			DynamicFields: dynamicFields,
 		}
 		if input.BirthDate != nil {
 			student.BirthDate = *input.BirthDate
@@ -137,7 +143,7 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		"school":         strings.TrimSpace(input.School),
 		"major":          strings.TrimSpace(input.Major),
 		"profile_photo":  strings.TrimSpace(input.ProfilePhoto),
-		"dynamic_fields": input.DynamicFields,
+		"dynamic_fields": dynamicFields,
 	}
 	if input.JalaliBirthDate != "" {
 		updates["jalali_birth_date"] = input.JalaliBirthDate

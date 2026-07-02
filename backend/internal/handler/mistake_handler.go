@@ -124,6 +124,12 @@ func (h *MistakeHandler) Create(c *gin.Context) {
 		return
 	}
 
+	dynamicFields, err := validateAndCleanDynamicValues(h.db, "mistake", input.DynamicFields)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	mistake := domain.Mistake{
 		StudentID:      student.ID,
 		ExamID:         input.ExamID,
@@ -131,7 +137,7 @@ func (h *MistakeHandler) Create(c *gin.Context) {
 		QuestionNumber: input.QuestionNumber,
 		Category:       input.Category,
 		Notes:          input.Notes,
-		DynamicFields:  input.DynamicFields,
+		DynamicFields:  dynamicFields,
 	}
 
 	if err := h.db.Create(&mistake).Error; err != nil {
@@ -287,7 +293,12 @@ func (h *MistakeHandler) Update(c *gin.Context) {
 		updates["notes"] = *input.Notes
 	}
 	if input.DynamicFields != nil {
-		updates["dynamic_fields"] = input.DynamicFields
+		dynamicFields, err := validateAndCleanDynamicValues(h.db, "mistake", input.DynamicFields)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		updates["dynamic_fields"] = dynamicFields
 	}
 
 	if err := h.db.Model(&mistake).Updates(updates).Error; err != nil {

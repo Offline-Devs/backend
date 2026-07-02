@@ -98,9 +98,11 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		authenticated := api.Group("")
 		authenticated.Use(middleware.AuthMiddleware(jwtService, db))
 		{
+			adminH := handler.NewAdminHandler(db)
 			studentH := handler.NewStudentHandler(db)
 			authenticated.POST("/students/profile", middleware.RequireRole("student"), studentH.CompleteProfile)
 			authenticated.GET("/students/profile", studentH.GetProfile)
+			authenticated.GET("/dynamic-fields", adminH.GetDynamicFields)
 
 			uploadH := handler.NewUploadHandler(cfg.UploadPath)
 			authenticated.POST("/upload", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadFile)
@@ -137,7 +139,6 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			admin := authenticated.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
-				adminH := handler.NewAdminHandler(db)
 				admin.GET("/students", adminH.ListStudents)
 				admin.GET("/students/with-stats", adminH.GetAllStudentsWithStats)
 				admin.GET("/students/:id", adminH.GetStudent)
