@@ -255,7 +255,7 @@ func TestAdminStudentManagement(t *testing.T) {
 func TestAdminPerformance(t *testing.T) {
 	resetDB(t)
 	_, adminToken := createAdmin(t)
-	_, studentID, _ := createStudent(t)
+	studentUserID, studentID, _ := createStudent(t)
 
 	var perfID string
 
@@ -275,6 +275,13 @@ func TestAdminPerformance(t *testing.T) {
 		}
 		if p.JalaliDate != "1403/04/04" {
 			t.Fatalf("expected canonical jalali date, got %q", p.JalaliDate)
+		}
+		var notification domain.Notification
+		if err := testDB.First(&notification, "user_id = ?", studentUserID).Error; err != nil {
+			t.Fatalf("expected notification: %v", err)
+		}
+		if notification.Href != "/performance#performance-"+p.ID || notification.IsRead {
+			t.Fatalf("unexpected notification: %+v", notification)
 		}
 		perfID = p.ID
 	})

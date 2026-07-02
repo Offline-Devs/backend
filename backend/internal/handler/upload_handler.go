@@ -42,6 +42,15 @@ func normalizeUploadType(fileType string) (string, bool) {
 	return normalized, ok
 }
 
+func allowedProfileExtension(filename string) bool {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".jpg", ".jpeg", ".png", ".webp":
+		return true
+	default:
+		return false
+	}
+}
+
 // generateUniqueFilename generates a unique filename using timestamp and random string
 func generateUniqueFilename(originalName string) string {
 	ext := filepath.Ext(originalName)
@@ -95,24 +104,9 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Validate file extension
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := map[string]bool{
-		".jpg":  true,
-		".jpeg": true,
-		".png":  true,
-		".gif":  true,
-		".pdf":  true,
-		".doc":  true,
-		".docx": true,
-		".xls":  true,
-		".xlsx": true,
-		".txt":  true,
-	}
-
-	if !allowedExts[ext] {
+	if fileType == "profile" && !allowedProfileExtension(file.Filename) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "invalid file type. Allowed: jpg, jpeg, png, gif, pdf, doc, docx, xls, xlsx, txt",
+			Error: "invalid file type. Allowed: jpg, jpeg, png, webp",
 		})
 		return
 	}
@@ -191,21 +185,7 @@ func (h *UploadHandler) UploadMultiple(c *gin.Context) {
 			continue // Skip files that are too large
 		}
 
-		ext := strings.ToLower(filepath.Ext(file.Filename))
-		allowedExts := map[string]bool{
-			".jpg":  true,
-			".jpeg": true,
-			".png":  true,
-			".gif":  true,
-			".pdf":  true,
-			".doc":  true,
-			".docx": true,
-			".xls":  true,
-			".xlsx": true,
-			".txt":  true,
-		}
-
-		if !allowedExts[ext] {
+		if fileType == "profile" && !allowedProfileExtension(file.Filename) {
 			continue // Skip invalid file types
 		}
 

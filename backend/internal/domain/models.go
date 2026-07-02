@@ -84,9 +84,9 @@ type Exam struct {
 }
 
 type SubjectExam struct {
-	ID             string  `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
-	ExamID         string  `gorm:"index;not null" json:"exam_id"`
-	SubjectName    string  `gorm:"not null" json:"subject_name"`
+	ID             string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	ExamID         string `gorm:"index;not null" json:"exam_id"`
+	SubjectName    string `gorm:"not null" json:"subject_name"`
 	TotalQuestions int    `json:"total_questions"`
 	Correct        int    `json:"correct"`
 	Wrong          int    `json:"wrong"`
@@ -125,6 +125,20 @@ type PerformanceHistory struct {
 	DeletedAt  gorm.DeletedAt `gorm:"index"`
 
 	Student Student `gorm:"foreignKey:StudentID"`
+}
+
+type Notification struct {
+	ID        string         `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	UserID    string         `gorm:"index;not null" json:"user_id"`
+	Title     string         `gorm:"not null" json:"title"`
+	Body      string         `json:"body,omitempty"`
+	Href      string         `json:"href,omitempty"`
+	IsRead    bool           `gorm:"default:false" json:"is_read"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
 type BlogPost struct {

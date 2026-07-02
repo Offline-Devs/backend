@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,28 @@ type UpdatePerformanceInput struct {
 
 func NewPerformanceHandler(db *gorm.DB) *PerformanceHandler {
 	return &PerformanceHandler{db: db}
+}
+
+func performanceNotificationBody(notes, studyPlan string) string {
+	body := strings.TrimSpace(notes)
+	if body == "" {
+		body = strings.TrimSpace(studyPlan)
+	}
+	body = strings.Join(strings.Fields(body), " ")
+	if len([]rune(body)) > 120 {
+		runes := []rune(body)
+		body = string(runes[:120]) + "..."
+	}
+	return body
+}
+
+func (h *PerformanceHandler) createPerformanceNotification(tx *gorm.DB, student domain.Student, performance domain.PerformanceHistory, title string) error {
+	return tx.Create(&domain.Notification{
+		UserID: student.UserID,
+		Title:  title,
+		Body:   performanceNotificationBody(performance.Notes, performance.StudyPlan),
+		Href:   "/performance#performance-" + performance.ID,
+	}).Error
 }
 
 // GetStudentPerformance godoc
@@ -134,7 +157,12 @@ func (h *PerformanceHandler) AdminCreatePerformance(c *gin.Context) {
 		Files:      input.Files,
 	}
 
-	if err := h.db.Create(&performance).Error; err != nil {
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&performance).Error; err != nil {
+			return err
+		}
+		return h.createPerformanceNotification(tx, student, performance, "گزارش عملکرد جدید")
+	}); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create performance record"})
 		return
 	}
@@ -174,14 +202,44 @@ func (h *PerformanceHandler) AdminUpdatePerformance(c *gin.Context) {
 	if input.Files != nil {
 		updates["files"] = *input.Files
 	}
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no fields to update"})
+		return
+	}
 
-	result := h.db.Model(&domain.PerformanceHistory{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
+	var performance domain.PerformanceHistory
+	if err := h.db.First(&performance, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "performance record not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update performance record"})
 		return
 	}
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "performance record not found"})
+
+	if notes, ok := updates["notes"].(string); ok {
+		performance.Notes = notes
+	}
+	if studyPlan, ok := updates["study_plan"].(string); ok {
+		performance.StudyPlan = studyPlan
+	}
+	if files, ok := updates["files"].(string); ok {
+		performance.Files = files
+	}
+
+	var student domain.Student
+	if err := h.db.First(&student, "id = ?", performance.StudentID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update performance record"})
+		return
+	}
+
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&domain.PerformanceHistory{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+			return err
+		}
+		return h.createPerformanceNotification(tx, student, performance, "گزارش عملکرد به‌روزرسانی شد")
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update performance record"})
 		return
 	}
 

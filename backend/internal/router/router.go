@@ -102,16 +102,17 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			authenticated.POST("/students/profile", middleware.RequireRole("student"), studentH.CompleteProfile)
 			authenticated.GET("/students/profile", studentH.GetProfile)
 
+			uploadH := handler.NewUploadHandler(cfg.UploadPath)
+			authenticated.POST("/upload", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadFile)
+			authenticated.POST("/upload/multiple", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadMultiple)
+
 			performanceH := handler.NewPerformanceHandler(db)
+			notificationH := handler.NewNotificationHandler(db)
 			statisticsH := handler.NewStatisticsHandler(db)
 
 			studentProtected := authenticated.Group("")
 			studentProtected.Use(middleware.RequireRole("student"), middleware.RequireApprovedStudent(db))
 			{
-				uploadH := handler.NewUploadHandler(cfg.UploadPath)
-				studentProtected.POST("/upload", uploadH.UploadFile)
-				studentProtected.POST("/upload/multiple", uploadH.UploadMultiple)
-
 				examH := handler.NewExamHandler(db)
 				studentProtected.POST("/exams", examH.CreateExam)
 				studentProtected.GET("/exams", examH.ListExams)
@@ -128,6 +129,8 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				studentProtected.GET("/students/performance", performanceH.GetStudentPerformance)
 				studentProtected.GET("/students/statistics", statisticsH.GetStudentStatistics)
 				studentProtected.GET("/students/dashboard", statisticsH.GetDashboardSummary)
+				studentProtected.GET("/notifications", notificationH.ListStudentNotifications)
+				studentProtected.PUT("/notifications/:id/read", notificationH.MarkNotificationRead)
 
 			}
 

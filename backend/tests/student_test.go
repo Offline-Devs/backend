@@ -164,6 +164,49 @@ func TestStudentPerformance(t *testing.T) {
 	})
 }
 
+func TestStudentNotifications(t *testing.T) {
+	resetDB(t)
+	userID, _, token := createStudent(t)
+	notification := domain.Notification{
+		UserID: userID,
+		Title:  "Performance report",
+		Body:   "New plan",
+		Href:   "/performance#performance-1",
+	}
+	if err := testDB.Create(&notification).Error; err != nil {
+		t.Fatalf("seed notification: %v", err)
+	}
+
+	t.Run("returns unread count", func(t *testing.T) {
+		resp := do(t, http.MethodGet, "/notifications", token, nil)
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var body struct {
+			Notifications []domain.Notification `json:"notifications"`
+			UnreadCount   int64                 `json:"unread_count"`
+		}
+		resp.JSON(t, &body)
+		if body.UnreadCount != 1 || len(body.Notifications) != 1 {
+			t.Fatalf("unexpected notifications response: %+v", body)
+		}
+	})
+
+	t.Run("marks notification read", func(t *testing.T) {
+		resp := do(t, http.MethodPut, "/notifications/"+notification.ID+"/read", token, nil)
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+		var reloaded domain.Notification
+		if err := testDB.First(&reloaded, "id = ?", notification.ID).Error; err != nil {
+			t.Fatalf("reload notification: %v", err)
+		}
+		if !reloaded.IsRead {
+			t.Fatalf("notification was not marked read")
+		}
+	})
+}
+
 // GET /students/statistics  &  GET /students/dashboard
 func TestStudentStatisticsAndDashboard(t *testing.T) {
 	resetDB(t)

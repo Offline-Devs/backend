@@ -97,6 +97,16 @@ func TestUploadFile(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
 		}
 	})
+
+	t.Run("admin can upload any document extension", func(t *testing.T) {
+		_, adminToken := createAdmin(t)
+		resp := doUpload(t, "/upload?type=document", adminToken, "file", map[string][]byte{
+			"archive.zip": []byte("zip-content"),
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
 
 // POST /upload/multiple
