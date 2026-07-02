@@ -106,6 +106,10 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			authenticated.POST("/upload", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadFile)
 			authenticated.POST("/upload/multiple", middleware.RequireAdminOrApprovedStudent(db), uploadH.UploadMultiple)
 
+			uploadH := handler.NewUploadHandler(cfg.UploadPath)
+			authenticated.POST("/upload", middleware.RequireApprovedStudentOrAdmin(db), uploadH.UploadFile)
+			authenticated.POST("/upload/multiple", middleware.RequireApprovedStudentOrAdmin(db), uploadH.UploadMultiple)
+
 			performanceH := handler.NewPerformanceHandler(db)
 			notificationH := handler.NewNotificationHandler(db)
 			statisticsH := handler.NewStatisticsHandler(db)
