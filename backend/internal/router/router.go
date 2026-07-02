@@ -60,9 +60,7 @@ func Setup(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			return
 		}
 
-		// Overrides host & basePath dynamically per-request
-		swaggerMap["host"] = c.Request.Host
-
+		// Override basePath dynamically per-request using X-Forwarded-Prefix from nginx
 		prefix := c.GetHeader("X-Forwarded-Prefix")
 		if prefix != "" {
 			swaggerMap["basePath"] = prefix
