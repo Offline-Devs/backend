@@ -338,6 +338,17 @@ func (h *AdminHandler) CreateDynamicField(c *gin.Context) {
 // @Router /admin/dynamic-fields/{id} [put]
 func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 	id := c.Param("id")
+
+	var existing domain.DynamicFieldDefinition
+	if err := h.db.First(&existing, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "field not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load field"})
+		return
+	}
+
 	var input CreateDynamicFieldInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid payload"})
@@ -367,13 +378,8 @@ func (h *AdminHandler) UpdateDynamicField(c *gin.Context) {
 		"is_required": field.IsRequired,
 	}
 
-	result := h.db.Model(&domain.DynamicFieldDefinition{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
+	if err := h.db.Model(&existing).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update field"})
-		return
-	}
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "field not found"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "updated"})

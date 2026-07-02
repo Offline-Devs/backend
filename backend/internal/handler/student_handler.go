@@ -90,6 +90,7 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load profile"})
 		return
 	}
+	notFound := err == gorm.ErrRecordNotFound
 
 	if input.JalaliBirthDate != "" {
 		canonicalDate, err := pkg.CanonicalJalaliDate(input.JalaliBirthDate)
@@ -110,7 +111,7 @@ func (h *StudentHandler) CompleteProfile(c *gin.Context) {
 		return
 	}
 
-	if err == gorm.ErrRecordNotFound {
+	if notFound {
 		student = domain.Student{
 			UserID:        userIDStr,
 			FirstName:     strings.TrimSpace(input.FirstName),
