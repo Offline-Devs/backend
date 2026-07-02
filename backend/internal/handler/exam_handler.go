@@ -261,13 +261,32 @@ func (h *ExamHandler) DeleteExam(c *gin.Context) {
 		return
 	}
 
-	result := h.db.Where("id = ? AND student_id = ?", id, student.ID).Delete(&domain.Exam{})
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete exam"})
+	var exam domain.Exam
+	if err := h.db.Select("id").First(&exam, "id = ? AND student_id = ?", id, student.ID).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "exam not found"})
 		return
 	}
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "exam not found"})
+
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&domain.Mistake{}).
+			Where("subject_exam_id IN (SELECT id FROM subject_exams WHERE exam_id = ?)", exam.ID).
+			Update("subject_exam_id", nil).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&domain.Mistake{}).
+			Where("exam_id = ?", exam.ID).
+			Update("exam_id", nil).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("exam_id = ?", exam.ID).Delete(&domain.SubjectExam{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&domain.Exam{}, "id = ?", exam.ID).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete exam"})
 		return
 	}
 

@@ -81,7 +81,7 @@ func TestAdminListStudents(t *testing.T) {
 func TestAdminStudentManagement(t *testing.T) {
 	resetDB(t)
 	_, adminToken := createAdmin(t)
-	_, studentID, studentToken := createStudent(t)
+	studentUserID, studentID, studentToken := createStudent(t)
 
 	// Seed an exam and a mistake for the student.
 	createExam(t, studentToken, "Seeded exam")
@@ -186,9 +186,60 @@ func TestAdminStudentManagement(t *testing.T) {
 	})
 
 	t.Run("delete student", func(t *testing.T) {
+		examID := createExam(t, studentToken, "Delete cascade exam")
+		var exam domain.Exam
+		if err := testDB.Preload("Subjects").First(&exam, "id = ?", examID).Error; err != nil {
+			t.Fatalf("reload exam: %v", err)
+		}
+		subjectID := exam.Subjects[0].ID
+		if err := testDB.Create(&domain.Mistake{StudentID: studentID, ExamID: &exam.ID, SubjectExamID: &subjectID, QuestionNumber: 5, Category: "cascade"}).Error; err != nil {
+			t.Fatalf("seed linked mistake: %v", err)
+		}
+		if err := testDB.Create(&domain.PerformanceHistory{StudentID: studentID, Notes: "cleanup", Date: exam.ExamDate, JalaliDate: exam.JalaliDate}).Error; err != nil {
+			t.Fatalf("seed performance: %v", err)
+		}
+
 		resp := do(t, http.MethodDelete, "/admin/students/"+studentID, adminToken, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
+		}
+
+		var count int64
+		if err := testDB.Model(&domain.Student{}).Where("id = ?", studentID).Count(&count).Error; err != nil {
+			t.Fatalf("count students: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected student deleted, got %d", count)
+		}
+		if err := testDB.Model(&domain.User{}).Where("id = ?", studentUserID).Count(&count).Error; err != nil {
+			t.Fatalf("count users: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected user deleted, got %d", count)
+		}
+		if err := testDB.Model(&domain.Exam{}).Where("student_id = ?", studentID).Count(&count).Error; err != nil {
+			t.Fatalf("count exams: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected exams deleted, got %d", count)
+		}
+		if err := testDB.Model(&domain.SubjectExam{}).Where("exam_id = ?", exam.ID).Count(&count).Error; err != nil {
+			t.Fatalf("count subjects: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected subjects deleted, got %d", count)
+		}
+		if err := testDB.Model(&domain.Mistake{}).Where("student_id = ?", studentID).Count(&count).Error; err != nil {
+			t.Fatalf("count mistakes: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected mistakes deleted, got %d", count)
+		}
+		if err := testDB.Model(&domain.PerformanceHistory{}).Where("student_id = ?", studentID).Count(&count).Error; err != nil {
+			t.Fatalf("count performance: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected performance deleted, got %d", count)
 		}
 	})
 

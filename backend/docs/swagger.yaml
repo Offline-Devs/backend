@@ -299,7 +299,7 @@ definitions:
         type: number
       subjects:
         items:
-          $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam'
+          $ref: '#/definitions/internal_handler.ExamSubjectInput'
         type: array
       title:
         type: string
@@ -359,6 +359,17 @@ definitions:
         items:
           $ref: '#/definitions/internal_handler.TrendPoint'
         type: array
+    type: object
+  internal_handler.ExamSubjectInput:
+    properties:
+      correct:
+        type: integer
+      subject_name:
+        type: string
+      total_questions:
+        type: integer
+      wrong:
+        type: integer
     type: object
   internal_handler.ListResponse:
     properties:
@@ -453,7 +464,7 @@ definitions:
         type: number
       subjects:
         items:
-          $ref: '#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam'
+          $ref: '#/definitions/internal_handler.ExamSubjectInput'
         type: array
       title:
         type: string

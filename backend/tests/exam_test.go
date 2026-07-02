@@ -187,6 +187,15 @@ func TestExamCRUD(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
+		var exam domain.Exam
+		if err := testDB.Preload("Subjects").First(&exam, "id = ?", examID).Error; err != nil {
+			t.Fatalf("reload exam before delete: %v", err)
+		}
+		subjectID := exam.Subjects[0].ID
+		if err := testDB.Create(&domain.Mistake{StudentID: exam.StudentID, ExamID: &exam.ID, SubjectExamID: &subjectID, QuestionNumber: 7, Category: "delete-check"}).Error; err != nil {
+			t.Fatalf("seed linked mistake: %v", err)
+		}
+
 		resp := do(t, http.MethodDelete, "/exams/"+examID, token, nil)
 		if resp.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", resp.Code, resp.Body)
@@ -195,6 +204,25 @@ func TestExamCRUD(t *testing.T) {
 		get := do(t, http.MethodGet, "/exams/"+examID, token, nil)
 		if get.Code != http.StatusNotFound {
 			t.Fatalf("expected 404 after delete, got %d", get.Code)
+		}
+
+		var subjectCount int64
+		if err := testDB.Model(&domain.SubjectExam{}).Where("exam_id = ?", examID).Count(&subjectCount).Error; err != nil {
+			t.Fatalf("count subjects: %v", err)
+		}
+		if subjectCount != 0 {
+			t.Fatalf("expected subject rows deleted, got %d", subjectCount)
+		}
+
+		var mistakes []domain.Mistake
+		if err := testDB.Where("student_id = ?", exam.StudentID).Find(&mistakes).Error; err != nil {
+			t.Fatalf("load mistakes: %v", err)
+		}
+		if len(mistakes) != 1 {
+			t.Fatalf("expected linked mistake preserved, got %d", len(mistakes))
+		}
+		if mistakes[0].ExamID != nil || mistakes[0].SubjectExamID != nil {
+			t.Fatalf("expected mistake references cleared, got %+v", mistakes[0])
 		}
 	})
 

@@ -184,13 +184,36 @@ func (h *AdminHandler) UpdateStudent(c *gin.Context) {
 // @Router /admin/students/{id} [delete]
 func (h *AdminHandler) DeleteStudent(c *gin.Context) {
 	id := c.Param("id")
-	result := h.db.Delete(&domain.Student{}, "id = ?", id)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete student"})
+	var student domain.Student
+	if err := h.db.Select("id", "user_id").First(&student, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
 		return
 	}
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "student not found"})
+
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.PerformanceHistory{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.Mistake{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("exam_id IN (?)",
+			tx.Model(&domain.Exam{}).Select("id").Where("student_id = ?", student.ID),
+		).Delete(&domain.SubjectExam{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("student_id = ?", student.ID).Delete(&domain.Exam{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&domain.Student{}, "id = ?", student.ID).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&domain.User{}, "id = ?", student.UserID).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete student"})
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})

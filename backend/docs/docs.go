@@ -2781,7 +2781,7 @@ const docTemplate = `{
                 "subjects": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
+                        "$ref": "#/definitions/internal_handler.ExamSubjectInput"
                     }
                 },
                 "title": {
@@ -2871,6 +2871,23 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/internal_handler.TrendPoint"
                     }
+                }
+            }
+        },
+        "internal_handler.ExamSubjectInput": {
+            "type": "object",
+            "properties": {
+                "correct": {
+                    "type": "integer"
+                },
+                "subject_name": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                },
+                "wrong": {
+                    "type": "integer"
                 }
             }
         },
@@ -3014,7 +3031,7 @@ const docTemplate = `{
                 "subjects": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_yourusername_noshirvani-academy_backend_internal_domain.SubjectExam"
+                        "$ref": "#/definitions/internal_handler.ExamSubjectInput"
                     }
                 },
                 "title": {

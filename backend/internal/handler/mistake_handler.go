@@ -199,8 +199,13 @@ func (h *MistakeHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.db.Where("id = ? AND student_id = ?", id, student.ID).Delete(&domain.Mistake{}).Error; err != nil {
+	result := h.db.Where("id = ? AND student_id = ?", id, student.ID).Delete(&domain.Mistake{})
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete mistake"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "mistake not found"})
 		return
 	}
 

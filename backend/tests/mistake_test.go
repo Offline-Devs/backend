@@ -99,6 +99,13 @@ func TestMistakeCRUD(t *testing.T) {
 			t.Fatalf("expected 0 mistakes after delete, got %d", len(mistakes))
 		}
 	})
+
+	t.Run("delete missing mistake -> 404", func(t *testing.T) {
+		resp := do(t, http.MethodDelete, "/mistakes/00000000-0000-0000-0000-000000000000", token, nil)
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
 }
 
 // Create without a profile must 404.
@@ -167,6 +174,18 @@ func TestMistakeRejectsForeignReferences(t *testing.T) {
 			"exam_id":         ownedExam.ID,
 			"subject_exam_id": subjectB.ID,
 		})
+		if resp.Code != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
+		}
+	})
+
+	t.Run("delete rejects foreign mistake", func(t *testing.T) {
+		foreignMistake := domain.Mistake{StudentID: studentB, QuestionNumber: 9, Category: "foreign"}
+		if err := testDB.Create(&foreignMistake).Error; err != nil {
+			t.Fatalf("seed foreign mistake: %v", err)
+		}
+
+		resp := do(t, http.MethodDelete, "/mistakes/"+foreignMistake.ID, tokenA, nil)
 		if resp.Code != http.StatusNotFound {
 			t.Fatalf("expected 404, got %d: %s", resp.Code, resp.Body)
 		}
